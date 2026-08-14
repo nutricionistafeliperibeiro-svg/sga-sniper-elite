@@ -670,19 +670,6 @@ if all_data:
                 st.rerun()
         st.markdown('<div class="box-title">📦 Confrontos selecionados</div>', unsafe_allow_html=True)
         
-        # Botão de Bloco Sugerido sempre visível
-        if st.button('🎁 Carregar Bloco Sugerido (12 Jogos)', use_container_width=True):
-            suggested = [
-                ("Rosenborg BK", "Viking FK"), ("Landskrona BoIS", "IK Oddevold"),
-                ("AFC Eskilstuna", "Hammarby TFF"), ("Lunds BK", "Hässleholms IF"),
-                ("IF Elfsborg", "Västerås SK"), ("Ahlafors IF", "Grebbestads IF"),
-                ("Husqvarna FF", "Skara FC"), ("Sölvesborgs GoIF", "Nosaby IF"),
-                ("Hestrafors IF", "Qviding FIF"), ("IK Kongahälla", "Västra Frölunda IF"),
-                ("Landvetter IS", "Galtabäcks BK"), ("Lindome GIF", "BK Astrio")
-            ]
-            st.session_state.block_matches = [{'mandante': m, 'visitante': v} for m, v in suggested]
-            st.session_state.block_results = []
-            st.rerun()
 
         if not st.session_state.block_matches:
             st.info('Nenhum confronto adicionado. Monte o bloco usando os seletores acima.')
