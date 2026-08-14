@@ -283,8 +283,14 @@ def get_team_stats(team_name, df_dados, df_equipes):
         'pais': all_matches.iloc[0]['País'] if not all_matches.empty else "N/A"
     }
     if not team_row.empty:
-        r = team_row.iloc[0]
-        stats.update({'fam': r['FAM'], 'vdm': r['VDM'], 'fav': r['FAV'], 'vdv': r['VDV'], 'ipm': r['IPM'], 'ipv': r['IPV'], 'tjm': r['TJM'], 'tjv': r['TJV'], 'modelo': r['Modelo Estatístico'], 'dispersao': r['Dispersão']})
+        r = team_row.iloc[0].fillna(0)
+        # Dispersão deve ser no mínimo 1 se for 0 ou NaN para não zerar o GE Real
+        disp = r['Dispersão'] if r['Dispersão'] > 0 else 1.0
+        stats.update({
+            'fam': r['FAM'], 'vdm': r['VDM'], 'fav': r['FAV'], 'vdv': r['VDV'], 
+            'ipm': r['IPM'], 'ipv': r['IPV'], 'tjm': r['TJM'], 'tjv': r['TJV'], 
+            'modelo': r['Modelo Estatístico'], 'dispersao': disp
+        })
     return stats
 
 def calculate_confronto_probs(ge_total):
