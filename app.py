@@ -516,18 +516,17 @@ if all_data:
 
     elif st.session_state.menu == 'Confronto':
         st.markdown(f"""<div class="sim-header"><h3 style="margin:0; color:#2C5282;">⚔️ Simulador de Confronto & Prova Real</h3><p style="margin:0; color:#4A5568; font-size:0.9rem;">Diagnóstico Robusto: Cruzamento Técnico (Confronto) + Validação Empírica (Prova Real)</p></div>""", unsafe_allow_html=True)
-        clubes_list = sorted(df_equipes['Equipe'].unique().tolist())
-        def team_search_format(team):
-            if team == "Selecione...": return team
-            norm = normalize_text(team)
-            if norm != team.lower():
-                return f"{team} ({norm})"
-            return team
+        clubes_list_raw = sorted(df_equipes['Equipe'].unique().tolist())
+        
+        # Filtro de busca por texto para facilitar a seleção
+        search_sim = st.text_input("🔍 Filtrar Equipes (ex: Brage ou Orebro)", key="search_sim_input", help="Digite parte do nome para filtrar as listas abaixo.")
+        norm_search_sim = normalize_text(search_sim)
+        clubes_list = [c for c in clubes_list_raw if norm_search_sim in normalize_text(c)]
 
         col_s1, col_vs, col_s2 = st.columns([2, 0.5, 2])
-        with col_s1: mandante = st.selectbox("Mandante", ["Selecione..."] + clubes_list, format_func=team_search_format, key="m_sim")
+        with col_s1: mandante = st.selectbox("Mandante", ["Selecione..."] + clubes_list, key="m_sim")
         with col_vs: st.markdown('<div style="font-size:1.5rem; font-weight:800; color:#CBD5E0; height:80px; display:flex; align-items:center; justify-content:center;">VS</div>', unsafe_allow_html=True)
-        with col_s2: visitante = st.selectbox("Visitante", ["Selecione..."] + clubes_list, format_func=team_search_format, key="v_sim")
+        with col_s2: visitante = st.selectbox("Visitante", ["Selecione..."] + clubes_list, key="v_sim")
         
         if mandante != "Selecione..." and visitante != "Selecione...":
             m, v = get_team_stats(mandante, df_dados, df_equipes), get_team_stats(visitante, df_dados, df_equipes)
@@ -634,25 +633,25 @@ if all_data:
 
     elif st.session_state.menu == 'Análise':
         st.markdown('''<div class="sim-header"><h3 style="margin:0; color:#2C5282;">🚀 Análise — Montagem em Bloco</h3><p style="margin:0; color:#4A5568; font-size:0.9rem;">Selecione vários confrontos e classifique os melhores para análise de gols e linhas asiáticas.</p></div>''', unsafe_allow_html=True)
-        clubes_bloco = sorted(df_equipes['Equipe'].dropna().astype(str).unique().tolist())
+        clubes_bloco_raw = sorted(df_equipes['Equipe'].dropna().astype(str).unique().tolist())
+        
+        # Filtro de busca por texto para o bloco
+        search_bloco = st.text_input("🔍 Filtrar Equipes para o Bloco (ex: Brage ou Orebro)", key="search_bloco_input", help="Digite parte do nome para filtrar as listas abaixo.")
+        norm_search_bloco = normalize_text(search_bloco)
+        clubes_bloco = [c for c in clubes_bloco_raw if norm_search_bloco in normalize_text(c)]
+
         if st.session_state.block_notice:
             st.info(st.session_state.block_notice)
             st.session_state.block_notice = ''
-        def team_search_format_bloco(team):
-            if team == "Selecione...": return team
-            norm = normalize_text(team)
-            if norm != team.lower():
-                return f"{team} ({norm})"
-            return team
 
         with st.form('form_adicionar_confronto', clear_on_submit=True):
             b_col1, b_col2, b_col3 = st.columns([2, 0.5, 2])
             with b_col1:
-                bloco_mandante = st.selectbox('Mandante', ['Selecione...'] + clubes_bloco, format_func=team_search_format_bloco, key='bloco_mandante')
+                bloco_mandante = st.selectbox('Mandante', ['Selecione...'] + clubes_bloco, key='bloco_mandante')
             with b_col2:
                 st.markdown('<div style="font-size:1.35rem; font-weight:800; color:#CBD5E0; height:80px; display:flex; align-items:center; justify-content:center;">VS</div>', unsafe_allow_html=True)
             with b_col3:
-                bloco_visitante = st.selectbox('Visitante', ['Selecione...'] + clubes_bloco, format_func=team_search_format_bloco, key='bloco_visitante')
+                bloco_visitante = st.selectbox('Visitante', ['Selecione...'] + clubes_bloco, key='bloco_visitante')
             adicionar_bloco = st.form_submit_button('＋ Adicionar confronto ao bloco', use_container_width=True)
         if adicionar_bloco:
             if bloco_mandante == 'Selecione...' or bloco_visitante == 'Selecione...':
