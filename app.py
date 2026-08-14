@@ -656,6 +656,21 @@ if all_data:
                 st.session_state.block_notice = f'{bloco_mandante} x {bloco_visitante} adicionado ao bloco.'
                 st.rerun()
         st.markdown('<div class="box-title">📦 Confrontos selecionados</div>', unsafe_allow_html=True)
+        
+        # Botão de Bloco Sugerido sempre visível
+        if st.button('🎁 Carregar Bloco Sugerido (12 Jogos)', use_container_width=True):
+            suggested = [
+                ("Rosenborg BK", "Viking FK"), ("Landskrona BoIS", "IK Oddevold"),
+                ("AFC Eskilstuna", "Hammarby TFF"), ("Lunds BK", "Hässleholms IF"),
+                ("IF Elfsborg", "Västerås SK"), ("Ahlafors IF", "Grebbestads IF"),
+                ("Husqvarna FF", "Skara FC"), ("Sölvesborgs GoIF", "Nosaby IF"),
+                ("Hestrafors IF", "Qviding FIF"), ("IK Kongahälla", "Västra Frölunda IF"),
+                ("Landvetter IS", "Galtabäcks BK"), ("Lindome GIF", "BK Astrio")
+            ]
+            st.session_state.block_matches = [{'mandante': m, 'visitante': v} for m, v in suggested]
+            st.session_state.block_results = []
+            st.rerun()
+
         if not st.session_state.block_matches:
             st.info('Nenhum confronto adicionado. Monte o bloco usando os seletores acima.')
         else:
@@ -669,26 +684,13 @@ if all_data:
                     if st.button('Remover', key=f'remove_bloco_{idx}', use_container_width=True):
                         st.session_state.block_matches.pop(idx)
                         st.rerun()
-            a_col1, a_col2, a_col3 = st.columns([1, 1, 1])
+            a_col1, a_col2 = st.columns([1, 1])
             with a_col1:
                 if st.button('🧹 Limpar bloco', use_container_width=True):
                     st.session_state.block_matches = []
                     st.session_state.block_results = []
                     st.rerun()
             with a_col2:
-                if st.button('🎁 Bloco Sugerido', use_container_width=True):
-                    suggested = [
-                        ("Rosenborg BK", "Viking FK"), ("Landskrona BoIS", "IK Oddevold"),
-                        ("AFC Eskilstuna", "Hammarby TFF"), ("Lunds BK", "Hässleholms IF"),
-                        ("IF Elfsborg", "Västerås SK"), ("Ahlafors IF", "Grebbestads IF"),
-                        ("Husqvarna FF", "Skara FC"), ("Sölvesborgs GoIF", "Nosaby IF"),
-                        ("Hestrafors IF", "Qviding FIF"), ("IK Kongahälla", "Västra Frölunda IF"),
-                        ("Landvetter IS", "Galtabäcks BK"), ("Lindome GIF", "BK Astrio")
-                    ]
-                    st.session_state.block_matches = [{'mandante': m, 'visitante': v} for m, v in suggested]
-                    st.session_state.block_results = []
-                    st.rerun()
-            with a_col3:
                 if st.button('🔎 Classificar melhores confrontos', use_container_width=True):
                     if not st.session_state.block_matches:
                         st.session_state.block_notice = 'Adicione confrontos antes de classificar.'
