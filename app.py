@@ -148,6 +148,8 @@ st.markdown("""
     .box-title::before { content: ""; display: block; width: 4px; height: 18px; background: var(--accent-blue); border-radius: 2px; }
     
     .details-box { background-color: white; border: 1px solid var(--border-color); border-radius: 14px; padding: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.02); }
+    .total-gm { color: #38A169; font-weight: 700; }
+    .total-gs { color: #E53E3E; font-weight: 700; }
     .side-stat-row { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #F1F5F9; font-size: 0.9rem; font-weight: 500; }
     .side-stat-row:last-child { border-bottom: none; }
     
@@ -491,11 +493,11 @@ if all_data:
                                         <div style="font-size:0.7rem; color:#718096; margin-bottom:8px;">{t_stats['pais']} - {t_stats['liga']}</div>
                                         <div style="display:flex; flex-direction:column; gap:4px; font-size:0.75rem;">
                                             <div style="display:flex; justify-content:space-between;">
-                                                <div><span style="color:#718096;">Casa (Avg):</span> <b>{avg_gmc:.2f}</b> / {avg_gsc:.2f}</div>
+                                                <div><span style="color:#718096;">Casa (Avg):</span> <b style="color:#38A169;">{avg_gmc:.2f}</b> / <span style="color:#E53E3E;">{avg_gsc:.2f}</span></div>
                                                 <span class="total-gm">{int(team['TGM'])}M</span>
                                             </div>
                                             <div style="display:flex; justify-content:space-between;">
-                                                <div><span style="color:#718096;">Fora (Avg):</span> <b>{avg_gmv:.2f}</b> / {avg_gsv:.2f}</div>
+                                                <div><span style="color:#718096;">Fora (Avg):</span> <b style="color:#38A169;">{avg_gmv:.2f}</b> / <span style="color:#E53E3E;">{avg_gsv:.2f}</span></div>
                                                 <span class="total-gs">{int(team['TGS'])}S</span>
                                             </div>
                                         </div>
