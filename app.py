@@ -752,10 +752,35 @@ if all_data:
                         emp_2_min = min(home_emp['over2plus'], away_emp['over2plus'])
                         emp_3_min = min(home_emp['over3plus'], away_emp['over3plus'])
                         
-                        # Rigor Sniper O2.0: Usamos o GE Real (Fato) para as probabilidades
-                        over_15 = float((1 - poisson.cdf(1, ge_real)) * 100) # Proteção O2 (Evitar RED)
-                        over_25 = float((1 - poisson.cdf(2, ge_real)) * 100) # Green O2.0 (Lucro)
-                        over_20 = over_15 - ((over_15 - over_25) / 2)
+                        # DETERMINAÇÃO DINÂMICA DA LINHA ALVO (Sincronizado com Confronto/Prova Real)
+                        # A linha é definida pelo GE Real (Fato)
+                        if ge_real >= 2.40:
+                            target_line = 2.0
+                            label_linha = "OVER 2,00"
+                        elif ge_real >= 1.85:
+                            target_line = 1.5
+                            label_linha = "OVER 1,50"
+                        elif ge_real >= 1.50:
+                            target_line = 1.0
+                            label_linha = "OVER 1,00"
+                        else:
+                            target_line = 0.5
+                            label_linha = "OVER 0,50"
+
+                        # Cálculo de Probabilidades para a Linha Alvo
+                        # Green: superando a linha / Push: batendo na linha exata
+                        if target_line == 2.0:
+                            p_green = float((1 - poisson.cdf(2, ge_real)) * 100) # 3+ gols
+                            p_push = float(poisson.pmf(2, ge_real) * 100)        # 2 gols exatos
+                        elif target_line == 1.5:
+                            p_green = float((1 - poisson.cdf(1, ge_real)) * 100) # 2+ gols
+                            p_push = 0.0                                         # Linha quebrada não tem push
+                        elif target_line == 1.0:
+                            p_green = float((1 - poisson.cdf(1, ge_real)) * 100) # 2+ gols
+                            p_push = float(poisson.pmf(1, ge_real) * 100)        # 1 gol exato
+                        else:
+                            p_green = float((1 - poisson.cdf(0, ge_real)) * 100) # 1+ gol
+                            p_push = 0.0
 
                         # Média do total de gols nos últimos cinco jogos
                         m_recent5 = df_dados[(df_dados['Mandante'] == conf['mandante']) | (df_dados['Visitante'] == conf['mandante'])].sort_values('Data', ascending=False).head(5)
@@ -764,30 +789,37 @@ if all_data:
                         v_last5_avg = ((v_recent5['GM_M'].astype(float) + v_recent5['GM_V'].astype(float)).mean() if not v_recent5.empty else 0.0)
                         ultimos5 = (m_last5_avg + v_last5_avg) / 2
 
-                        # Nível O2.0: FORTE, BOA, ELEGÍVEL COM CAUTELA
-                        # Filtro de Segurança Sniper: Risco de 0x0 > 5% força recuo para 1.25 ou descarte
-                        if over_25 >= 75 and over_15 >= 90 and p0x0_stress <= 3.0:
-                            leitura = 'FORTE'
-                            status_key = 3
-                            border_color, bg_color = '#0F5FA8', '#EBF8FF'
-                            linha_sugerida = 'OVER 2,00'
-                        elif over_25 >= 65 and over_15 >= 85 and p0x0_stress <= 5.0:
-                            leitura = 'BOA'
-                            status_key = 2
-                            border_color, bg_color = '#4299E1', '#F7FCFF'
-                            linha_sugerida = 'OVER 2,00'
+                        # CLASSIFICAÇÃO DINÂMICA (Baseada na Linha Alvo e Veto)
+                        is_veto_sniper = p0x0_stress > 10 or (zero_m + zero_v) / 2 > 0.08
+                        
+                        if ge_real > 1.8 and not is_veto_sniper:
+                            if p_green >= 70:
+                                leitura = 'FORTE'
+                                status_key = 3
+                                border_color, bg_color = '#0F5FA8', '#EBF8FF'
+                            else:
+                                leitura = 'BOA'
+                                status_key = 2
+                                border_color, bg_color = '#4299E1', '#F7FCFF'
                         else:
                             leitura = 'ELEGÍVEL COM CAUTELA'
                             status_key = 1
                             border_color, bg_color = '#E53E3E', '#FFF5F5'
-                            # Recuo para a primeira linha ou descarte se o risco for alto
-                            linha_sugerida = 'OVER 1,25' if p0x0_stress <= 7.0 else 'NÃO APOSTAR'
+                        
+                        linha_sugerida = label_linha
+                        if is_veto_sniper and target_line >= 1.5:
+                            linha_sugerida = "OVER 1,00 PROTEGIDO"
+                        elif is_veto_sniper:
+                            linha_sugerida = "NÃO APOSTAR"
 
-                        obs = f"{over_25:.1f}% de GREEN e {over_15:.1f}% de GREEN ou PUSH."
-                        if linha_sugerida == 'OVER 1,25':
-                            obs += " Risco elevado detectado: recuar para primeira linha (1,25)."
-                        elif linha_sugerida == 'NÃO APOSTAR':
-                            obs += " Fragilidade técnica extrema: entrada não recomendada."
+                        # Observação técnica coerente com a linha
+                        if p_push > 0:
+                            obs = f"{p_green:.1f}% de GREEN e {p_push:.1f}% de PUSH na linha {label_linha}."
+                        else:
+                            obs = f"{p_green:.1f}% de GREEN direto na linha {label_linha}."
+                        
+                        if is_veto_sniper:
+                            obs += " Alerta de veto detectado na Prova Real."
 
                         # Identificação de Rankings de Elite para Alertas
                         # A aba Equipes V3 não possui as colunas legadas 'Liga', 'GM', 'GS' e 'Jogos'.
@@ -842,9 +874,8 @@ if all_data:
                             'ge_real': ge_real,
                             'p0x0': p0x0_stress,
                             'lambda_total': l_total,
-                            'over15': over_15,
-                            'over20': over_20,
-                            'over25': over_25,
+                            'p_green': p_green,
+                            'p_push': p_push,
                             'j_casa': j_casa,
                             'j_fora': j_fora,
                             'emp2': emp_2_min,
@@ -856,7 +887,7 @@ if all_data:
                         })
                     
                     # Ordem: melhor leitura -> maior confirmação empírica -> maior GE Real -> maior máquina.
-                    st.session_state.block_results = sorted(results, key=lambda x: (x['status_key'], x['over25'], x['emp2'], x['ge_real'], x['maquina'], x['cruzamento']), reverse=True)
+                    st.session_state.block_results = sorted(results, key=lambda x: (x['status_key'], x['p_green'], x['emp2'], x['ge_real'], x['maquina'], x['cruzamento']), reverse=True)
                     st.session_state.block_notice = '✅ Classificação concluída com sucesso!'
                     st.rerun()
         
@@ -899,18 +930,18 @@ if all_data:
             st.markdown("---")
 
             # Texto de Leitura Operacional Unificada (Estilo Copilot)
-            min_push = min([r['over15'] for r in st.session_state.block_results])
-            max_push = max([r['over15'] for r in st.session_state.block_results])
+            min_green = min([r['p_green'] for r in st.session_state.block_results])
+            max_green = max([r['p_green'] for r in st.session_state.block_results])
             
             op_text = f"""
             <div style='background:#EBF8FF; border-left:5px solid #0D6B82; padding:15px; border-radius:8px; margin-bottom:20px; font-size:13px; color:#1A202C;'>
                 <b style='color:#0D6B82; text-transform:uppercase; font-size:11px;'>Leitura Operacional</b><br>
-                Todos os confrontos selecionados são elegíveis ao Over 2,00 pelo critério de proteção: dois gols resultam em devolução, e a probabilidade de evitar RED varia de {min_push:.1f}% a {max_push:.1f}%.<br><br>
+                Os confrontos selecionados foram avaliados individualmente em suas linhas naturais de valor. A probabilidade de <b>GREEN direto</b> nas linhas sugeridas varia de {min_green:.1f}% a {max_green:.1f}%.<br><br>
             """
             for idx, res in enumerate(st.session_state.block_results, start=1):
                 op_text += f"<b>{idx}. {res['confronto']}</b>: {res['obs']}<br>"
             
-            op_text += "<br><i>Regra operacional: considerar entrada somente se a odd disponível compensar o risk, mantendo exatamente dois gols como cenário de devolução.</i></div>"
+            op_text += "<br><i>Regra operacional: A linha sugerida busca o equilíbrio entre probabilidade de acerto e proteção do capital. Considere a entrada se a odd de mercado for superior à odd justa calculada pelo modelo.</i></div>"
             st.markdown(op_text, unsafe_allow_html=True)
 
             cards = []
@@ -936,8 +967,8 @@ if all_data:
                             <div><small>λ TOTAL</small><b>{res['lambda_total']:.2f}</b></div>
                             <div><small>GE REAL</small><b class='blue'>{res['ge_real']:.2f}</b></div>
                             <div><small>RISCO 0x0</small><b class='red'>{res['p0x0']:.1f}%</b></div>
-                            <div><small>PROTEÇÃO O2</small><b>{res['over15']:.1f}%</b></div>
-                            <div style='background:rgba(43,108,176,.1); border-radius:4px; padding:2px;'><small style='color:#2B6CB0;'>GREEN O2.0</small><b style='color:#2B6CB0;'>{res['over25']:.1f}%</b></div>
+                            <div><small>PROB. PUSH</small><b>{res['p_push']:.1f}%</b></div>
+                            <div style='background:rgba(43,108,176,.1); border-radius:4px; padding:2px;'><small style='color:#2B6CB0;'>PROB. GREEN</small><b style='color:#2B6CB0;'>{res['p_green']:.1f}%</b></div>
                             <div><small>2+ EMP. MÍN.</small><b>{res['emp2']:.1f}%</b></div>
                             <div><small>3+ EMP. MÍN.</small><b>{res['emp3']:.1f}%</b></div>
                             <div><small>ÚLTIMOS 5</small><b>{res['ultimos5']:.2f}</b></div>
