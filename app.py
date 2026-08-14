@@ -19,7 +19,7 @@ if 'home_view' not in st.session_state: st.session_state.home_view = 'Over'
 if 'block_matches' not in st.session_state: st.session_state.block_matches = []
 if 'block_notice' not in st.session_state: st.session_state.block_notice = ''
 if 'block_results' not in st.session_state: st.session_state.block_results = []
-if 'block_matches_file' not in st.session_state: st.session_state.block_matches_file = '/home/ubuntu/block_matches.json'
+if 'block_matches_file' not in st.session_state: st.session_state.block_matches_file = 'block_matches.json'
 
 # Processamento de Parâmetros da URL (Links externos)
 # Usamos query_params apenas se eles existirem e ainda não foram processados
@@ -648,16 +648,16 @@ if all_data:
                 st.session_state.uploaded_file = new_file_analise
                 st.rerun()
         with c3:
-            # Botões de Persistência
-            p_col1, p_col2 = st.columns(2)
+            # Botões de Persistência e Restauração
+            p_col1, p_col2, p_col3 = st.columns([1, 1, 2])
             with p_col1:
-                if st.button("💾 Salvar", use_container_width=True, help="Salvar lista atual de confrontos"):
+                if st.button("💾 Salvar", use_container_width=True, help="Salvar lista atual"):
                     with open(st.session_state.block_matches_file, 'w') as f:
                         json.dump(st.session_state.block_matches, f)
                     st.session_state.block_notice = "✅ Bloco salvo com sucesso!"
                     st.rerun()
             with p_col2:
-                if st.button("📂 Abrir", use_container_width=True, help="Carregar última lista salva"):
+                if st.button("📂 Abrir", use_container_width=True, help="Carregar última lista"):
                     if os.path.exists(st.session_state.block_matches_file):
                         with open(st.session_state.block_matches_file, 'r') as f:
                             st.session_state.block_matches = json.load(f)
@@ -665,8 +665,31 @@ if all_data:
                         st.session_state.block_notice = "✅ Bloco carregado com sucesso!"
                         st.rerun()
                     else:
-                        st.session_state.block_notice = "❌ Nenhum bloco salvo encontrado."
+                        st.session_state.block_notice = "❌ Nenhum bloco salvo."
                         st.rerun()
+            with p_col3:
+                if st.button("⚡ Restaurar 15 Jogos", use_container_width=True, help="Restaurar o bloco da imagem"):
+                    matches_15 = [
+                        {'mandante': 'Ponte Preta', 'visitante': 'Náutico'},
+                        {'mandante': 'São Bernardo', 'visitante': 'Botafogo SP'},
+                        {'mandante': 'Sport Recife', 'visitante': 'Londrina'},
+                        {'mandante': 'Vancouver FC', 'visitante': 'Pacific FC'},
+                        {'mandante': 'Universidad de Concepción', 'visitante': 'Deportes La Serena'},
+                        {'mandante': 'Independiente del Valle', 'visitante': 'Delfín SC'},
+                        {'mandante': 'Apia L Tigers', 'visitante': 'SD Raiders'},
+                        {'mandante': 'Manly United', 'visitante': 'NWS Spirit'},
+                        {'mandante': 'Sydney Olympic', 'visitante': 'Sydney United'},
+                        {'mandante': 'Heidelberg United', 'visitante': 'Hume City'},
+                        {'mandante': 'Melbourne City U21', 'visitante': 'South Melbourne'},
+                        {'mandante': 'Armadale', 'visitante': 'Dianella White Eagle'},
+                        {'mandante': 'Olympic Kingsway', 'visitante': 'Sorrento FC'},
+                        {'mandante': 'Western Knights', 'visitante': 'Balcatta'},
+                        {'mandante': 'Perth Azzurri', 'visitante': 'Perth RedStar'}
+                    ]
+                    st.session_state.block_matches = matches_15
+                    st.session_state.block_results = []
+                    st.session_state.block_notice = "✅ Bloco de 15 partidas restaurado com sucesso!"
+                    st.rerun()
 
         norm_search_bloco = normalize_text(search_bloco)
         clubes_bloco = [c for c in clubes_bloco_raw if norm_search_bloco in normalize_text(c)]
