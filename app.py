@@ -315,7 +315,7 @@ if all_data:
                 </a>
                 <div>
                     <p class="title-main">SGA V7.1 — Sniper Elite</p>
-                    <p class="subtitle-main">Fato Soberano · Inteligência de Dados Pré-Live</p>
+                    <p class="subtitle-main">Inteligência de Dados Pré-Live</p>
                 </div>
             </div>
             <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 2px;">
