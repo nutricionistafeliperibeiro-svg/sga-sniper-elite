@@ -4,6 +4,7 @@ import numpy as np
 import os
 import base64
 import unicodedata
+import json
 from scipy.stats import poisson, nbinom
 from datetime import datetime
 import streamlit.components.v1 as components
@@ -18,6 +19,7 @@ if 'home_view' not in st.session_state: st.session_state.home_view = 'Over'
 if 'block_matches' not in st.session_state: st.session_state.block_matches = []
 if 'block_notice' not in st.session_state: st.session_state.block_notice = ''
 if 'block_results' not in st.session_state: st.session_state.block_results = []
+if 'block_matches_file' not in st.session_state: st.session_state.block_matches_file = '/home/ubuntu/block_matches.json'
 
 # Processamento de Parâmetros da URL (Links externos)
 # Usamos query_params apenas se eles existirem e ainda não foram processados
@@ -636,7 +638,36 @@ if all_data:
         clubes_bloco_raw = sorted(df_equipes['Equipe'].dropna().astype(str).unique().tolist())
         
         # Filtro de busca por texto para o bloco
-        search_bloco = st.text_input("🔍 Filtrar Equipes para o Bloco (ex: Brage ou Orebro)", key="search_bloco_input", help="Digite parte do nome para filtrar as listas abaixo.")
+        c1, c2, c3 = st.columns([2, 1, 1])
+        with c1:
+            search_bloco = st.text_input("🔍 Filtrar Equipes para o Bloco", key="search_bloco_input", placeholder="Ex: Brage ou Orebro", label_visibility="collapsed")
+        with c2:
+            # Botão de Upload Discreto (Excel) na aba Análise
+            new_file_analise = st.file_uploader("EXCEL", type=["xlsx"], label_visibility="collapsed", key="excel_uploader_analise")
+            if new_file_analise:
+                st.session_state.uploaded_file = new_file_analise
+                st.rerun()
+        with c3:
+            # Botões de Persistência
+            p_col1, p_col2 = st.columns(2)
+            with p_col1:
+                if st.button("💾 Salvar", use_container_width=True, help="Salvar lista atual de confrontos"):
+                    with open(st.session_state.block_matches_file, 'w') as f:
+                        json.dump(st.session_state.block_matches, f)
+                    st.session_state.block_notice = "✅ Bloco salvo com sucesso!"
+                    st.rerun()
+            with p_col2:
+                if st.button("📂 Abrir", use_container_width=True, help="Carregar última lista salva"):
+                    if os.path.exists(st.session_state.block_matches_file):
+                        with open(st.session_state.block_matches_file, 'r') as f:
+                            st.session_state.block_matches = json.load(f)
+                        st.session_state.block_results = []
+                        st.session_state.block_notice = "✅ Bloco carregado com sucesso!"
+                        st.rerun()
+                    else:
+                        st.session_state.block_notice = "❌ Nenhum bloco salvo encontrado."
+                        st.rerun()
+
         norm_search_bloco = normalize_text(search_bloco)
         clubes_bloco = [c for c in clubes_bloco_raw if norm_search_bloco in normalize_text(c)]
 
