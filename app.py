@@ -494,7 +494,7 @@ if all_data:
                                             <span style="font-weight:700; font-size:0.85rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 160px;" title="{team['Equipe']}">{idx+1}. {team['Equipe']}</span>
                                             <div>{form_html}</div>
                                         </div>
-                                        <div style="font-size:0.7rem; color:#718096; margin-bottom:8px; display:flex; align-items:center; gap:5px;">{t_stats['pais']} - {t_stats['liga']} {get_flag_img(t_stats['pais_liga'])}</div>
+                                        <div style="font-size:0.7rem; color:#718096; margin-bottom:8px; display:flex; align-items:center; gap:5px;">{t_stats['pais']} - {t_stats['liga']} {get_flag_img(f"{t_stats['pais']} - {t_stats['liga']}")}</div>
                                         <div style="display:flex; flex-direction:column; gap:4px; font-size:0.75rem;">
                                             <div style="display:flex; justify-content:space-between;">
                                                 <div><span style="color:#718096;">Casa (Avg):</span> {format_avg_html(avg_gmc, "#38A169")} / {format_avg_html(avg_gsc, "#E53E3E")}</div>
