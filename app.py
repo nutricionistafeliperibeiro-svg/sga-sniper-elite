@@ -487,7 +487,7 @@ if all_data:
                                 st.markdown(f"""
                                     <a href="/?time={team['Equipe']}" target="_self" class="card-link">
                                         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;">
-                                            <span style="font-weight:700; font-size:0.85rem;">{idx+1}. {team['Equipe']}</span>
+                                            <span style="font-weight:700; font-size:0.85rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 160px;" title="{team['Equipe']}">{idx+1}. {team['Equipe']}</span>
                                             <div>{form_html}</div>
                                         </div>
                                         <div style="font-size:0.7rem; color:#718096; margin-bottom:8px;">{t_stats['pais']} - {t_stats['liga']}</div>
