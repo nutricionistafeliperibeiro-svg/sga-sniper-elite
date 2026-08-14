@@ -233,6 +233,10 @@ def normalize_text(text):
     if not isinstance(text, str): return ""
     return "".join(c for c in unicodedata.normalize('NFD', text) if unicodedata.category(c) != 'Mn').lower()
 
+def format_avg_html(val, color):
+    weight = "800" if val > 3.0 else "400"
+    return f'<span style="color:{color}; font-weight:{weight};">{val:.2f}</span>'
+
 def get_flag_img(pais_liga):
     if not isinstance(pais_liga, str): return ""
     p = pais_liga.split('-')[0].strip().upper()
@@ -493,11 +497,11 @@ if all_data:
                                         <div style="font-size:0.7rem; color:#718096; margin-bottom:8px;">{t_stats['pais']} - {t_stats['liga']}</div>
                                         <div style="display:flex; flex-direction:column; gap:4px; font-size:0.75rem;">
                                             <div style="display:flex; justify-content:space-between;">
-                                                <div><span style="color:#718096;">Casa (Avg):</span> <b style="color:#38A169;">{avg_gmc:.2f}</b> / <span style="color:#E53E3E;">{avg_gsc:.2f}</span></div>
+                                                <div><span style="color:#718096;">Casa (Avg):</span> {format_avg_html(avg_gmc, "#38A169")} / {format_avg_html(avg_gsc, "#E53E3E")}</div>
                                                 <span class="total-gm">{int(team['TGM'])}M</span>
                                             </div>
                                             <div style="display:flex; justify-content:space-between;">
-                                                <div><span style="color:#718096;">Fora (Avg):</span> <b style="color:#38A169;">{avg_gmv:.2f}</b> / <span style="color:#E53E3E;">{avg_gsv:.2f}</span></div>
+                                                <div><span style="color:#718096;">Fora (Avg):</span> {format_avg_html(avg_gmv, "#38A169")} / {format_avg_html(avg_gsv, "#E53E3E")}</div>
                                                 <span class="total-gs">{int(team['TGS'])}S</span>
                                             </div>
                                         </div>
