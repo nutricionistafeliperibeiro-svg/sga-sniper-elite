@@ -775,14 +775,34 @@ if all_data:
                             obs += " Fragilidade técnica extrema: entrada não recomendada."
 
                         # Identificação de Rankings de Elite para Alertas
-                        df_elite = df_equipes[df_equipes['Liga'] != 'MLS-Cross'].copy()
-                        df_elite['GM_Avg'] = df_elite['GM'] / df_elite['Jogos'].replace(0, 1)
-                        df_elite['GS_Avg'] = df_elite['GS'] / df_elite['Jogos'].replace(0, 1)
-                        df_elite['Score_Maquina'] = (df_elite['GM_Avg'] * df_elite['GS_Avg']) * (df_elite[['GM_Avg', 'GS_Avg']].min(axis=1) / df_elite[['GM_Avg', 'GS_Avg']].max(axis=1))
-                        
+                        # A aba Equipes V3 não possui as colunas legadas 'Liga', 'GM', 'GS' e 'Jogos'.
+                        # Ela usa 'País - Liga', 'TGM', 'TGS' e 'TJT'.
+                        df_elite = df_equipes.copy()
+                        if 'País - Liga' in df_elite.columns:
+                            df_elite = df_elite[~df_elite['País - Liga'].astype(str).str.contains('MLS-Cross', case=False, na=False)].copy()
+                        elif 'Liga' in df_elite.columns:
+                            df_elite = df_elite[df_elite['Liga'].astype(str).str.casefold() != 'mls-cross'].copy()
+
+                        # Aliases robustos para manter compatibilidade com versões antigas e V3.
+                        jogos_col = 'TJT' if 'TJT' in df_elite.columns else ('Jogos' if 'Jogos' in df_elite.columns else None)
+                        gm_col = 'TGM' if 'TGM' in df_elite.columns else ('GM' if 'GM' in df_elite.columns else None)
+                        gs_col = 'TGS' if 'TGS' in df_elite.columns else ('GS' if 'GS' in df_elite.columns else None)
+                        if not all([jogos_col, gm_col, gs_col]):
+                            raise KeyError('A aba Equipes precisa conter TGM/TGS/TJT (ou os aliases GM/GS/Jogos).')
+
+                        jogos_base = pd.to_numeric(df_elite[jogos_col], errors='coerce').fillna(0).replace(0, 1)
+                        gm_base = pd.to_numeric(df_elite[gm_col], errors='coerce').fillna(0)
+                        gs_base = pd.to_numeric(df_elite[gs_col], errors='coerce').fillna(0)
+                        df_elite['GM_Avg'] = gm_base / jogos_base
+                        df_elite['GS_Avg'] = gs_base / jogos_base
+                        max_avg = df_elite[['GM_Avg', 'GS_Avg']].max(axis=1).replace(0, 1)
+                        df_elite['Score_Maquina'] = (df_elite['GM_Avg'] * df_elite['GS_Avg']) * (df_elite[['GM_Avg', 'GS_Avg']].min(axis=1) / max_avg)
+                        df_elite['GM_Base'] = gm_base
+                        df_elite['GS_Base'] = gs_base
+
                         top_maquinas = df_elite.sort_values('Score_Maquina', ascending=False).head(15)['Equipe'].tolist()
-                        top_ataques = df_elite.sort_values('GM', ascending=False).head(15)['Equipe'].tolist()
-                        top_defesas = df_elite.sort_values('GS', ascending=False).tail(15)['Equipe'].tolist() # Maiores GS = Piores Defesas
+                        top_ataques = df_elite.sort_values('GM_Base', ascending=False).head(15)['Equipe'].tolist()
+                        top_defesas = df_elite.sort_values('GS_Base', ascending=False).head(15)['Equipe'].tolist() # Maiores TGS = Piores Defesas
                         
                         alertas = []
                         if conf['mandante'] in top_maquinas: alertas.append("🔥 Máquina (M)")
