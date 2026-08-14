@@ -225,7 +225,7 @@ def get_base64_image(image_path):
     with open(image_path, "rb") as img_file:
         return base64.b64encode(img_file.read()).decode()
 
-LOGO_B64 = get_base64_image("/home/ubuntu/logo_final.png")
+LOGO_B64 = get_base64_image("logo_final.png") if os.path.exists("logo_final.png") else ""
 
 def normalize_text(text):
     if not isinstance(text, str): return ""
