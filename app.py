@@ -234,7 +234,7 @@ def normalize_text(text):
     return "".join(c for c in unicodedata.normalize('NFD', text) if unicodedata.category(c) != 'Mn').lower()
 
 def format_avg_html(val, color):
-    weight = "800" if val > 3.0 else "400"
+    weight = "800" if val >= 3.0 else "400"
     return f'<span style="color:{color}; font-weight:{weight};">{val:.2f}</span>'
 
 def get_flag_img(pais_liga):
