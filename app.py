@@ -1006,14 +1006,18 @@ if all_data:
                 # Métricas Resumidas no Topo
                 total_bilh = len(bilhetes_list)
                 greens_b = sum(1 for b in bilhetes_list if 'green' in b['resultado'].lower())
-                reds_b = sum(1 for b in bilhetes_list if 'red' in b['resultado'].lower())
+                reds_b = sum(1 for b in bilhetes_list if 'red' in b['resultado'].lower() and 'meio' not in b['resultado'].lower())
+                meio_red_b = sum(1 for b in bilhetes_list if 'meio red' in b['resultado'].lower() or 'meio-red' in b['resultado'].lower())
+                devolvidas_b = sum(1 for b in bilhetes_list if any(x in b['resultado'].lower() for x in ['devolvida', 'push', 'reembolso']))
                 pnl_b = sum(b['pl'] for b in bilhetes_list)
                 
-                b1, b2, b3, b4 = st.columns(4)
+                b1, b2, b3, b4, b5, b6 = st.columns(6)
                 b1.metric('Total Bilhetes', total_bilh)
                 b2.metric('Greens', greens_b)
                 b3.metric('Reds', reds_b)
-                b4.metric('P/L Acumulado', f'R$ {pnl_b:,.2f}'.replace(',', 'X').replace('.', ',').replace('X', '.'))
+                b4.metric('Meio-Red', meio_red_b)
+                b5.metric('Devolvidas', devolvidas_b)
+                b6.metric('P/L Acumulado', f'R$ {pnl_b:,.2f}'.replace(',', 'X').replace('.', ',').replace('X', '.'))
                 st.markdown('---')
 
                 cards_html = """
@@ -1032,7 +1036,10 @@ if all_data:
                 """
                 for b in bilhetes_list:
                     res_lower = b['resultado'].lower()
-                    res_class = "green-box" if "green" in res_lower else ("red-box" if "red" in res_lower else "excel-sub-content")
+                    if "green" in res_lower: res_class = "green-box"
+                    elif "red" in res_lower or "meio red" in res_lower: res_class = "red-box"
+                    elif any(x in res_lower for x in ["devolvida", "push", "reembolso"]): res_class = "excel-sub-content"
+                    else: res_class = "excel-sub-content"
                     
                     cards_html += f"""
                     <div class="excel-bilhete">
