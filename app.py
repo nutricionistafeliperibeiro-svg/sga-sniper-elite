@@ -1003,21 +1003,25 @@ if all_data:
                 i += 9
 
             if bilhetes_list:
-                # Métricas Resumidas no Topo
-                total_bilh = len(bilhetes_list)
-                greens_b = sum(1 for b in bilhetes_list if 'green' in b['resultado'].lower())
-                reds_b = sum(1 for b in bilhetes_list if 'red' in b['resultado'].lower() and 'meio' not in b['resultado'].lower())
-                meio_red_b = sum(1 for b in bilhetes_list if 'meio red' in b['resultado'].lower() or 'meio-red' in b['resultado'].lower())
-                devolvidas_b = sum(1 for b in bilhetes_list if any(x in b['resultado'].lower() for x in ['devolvida', 'push', 'reembolso']))
-                pnl_b = sum(b['pl'] for b in bilhetes_list)
+                # Filtro: Contar apenas bilhetes liquidados
+                liquidados = [b for b in bilhetes_list if any(x in b['resultado'].lower() for x in ['green', 'red', 'devolvida', 'push', 'reembolso', 'cashout'])]
                 
-                b1, b2, b3, b4, b5, b6 = st.columns(6)
-                b1.metric('Total Bilhetes', total_bilh)
+                total_liq = len(liquidados)
+                greens_b = sum(1 for b in liquidados if 'green' in b['resultado'].lower())
+                reds_b = sum(1 for b in liquidados if 'red' in b['resultado'].lower() and 'meio' not in b['resultado'].lower())
+                meio_red_b = sum(1 for b in liquidados if 'meio red' in b['resultado'].lower() or 'meio-red' in b['resultado'].lower())
+                devolvidas_b = sum(1 for b in liquidados if any(x in b['resultado'].lower() for x in ['devolvida', 'push', 'reembolso']))
+                cashouts_b = sum(1 for b in liquidados if 'cashout' in b['resultado'].lower())
+                pnl_b = sum(b['pl'] for b in bilhetes_list) # P/L continua sendo o total geral
+                
+                b1, b2, b3, b4, b5, b6, b7 = st.columns(7)
+                b1.metric('Liquidados', total_liq)
                 b2.metric('Greens', greens_b)
                 b3.metric('Reds', reds_b)
                 b4.metric('Meio-Red', meio_red_b)
                 b5.metric('Devolvidas', devolvidas_b)
-                b6.metric('P/L Acumulado', f'R$ {pnl_b:,.2f}'.replace(',', 'X').replace('.', ',').replace('X', '.'))
+                b6.metric('Cashouts', cashouts_b)
+                b7.metric('P/L Total', f'R$ {pnl_b:,.2f}'.replace(',', 'X').replace('.', ',').replace('X', '.'))
                 st.markdown('---')
 
                 cards_html = """
