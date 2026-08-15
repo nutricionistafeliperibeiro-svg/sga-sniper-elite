@@ -212,9 +212,9 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-# Carregamento de Dados com Cache para Performance
-@st.cache_data
-def load_data(file_content):
+# Carregamento de Dados com Cache para Performance (Versão 7.1.3)
+@st.cache_data(ttl=30) # Cache expira em 30 segundos para garantir sincronia total
+def load_data(file_content, force_reload=False):
     try:
         # file_content pode ser um path (string) ou BytesIO (upload)
         data_dict = pd.read_excel(file_content, sheet_name=None)
@@ -232,9 +232,16 @@ EXCEL_PATH = "tabela_de_dados_apostas_V3.xlsx"
 # Lógica de prioridade: Upload > Arquivo Local
 uploaded_file = st.session_state.get('uploaded_file', None)
 if uploaded_file:
-    all_data = load_data(uploaded_file)
+    # Usamos o tamanho do arquivo como chave para forçar recarregamento
+    all_data = load_data(uploaded_file, force_reload=str(uploaded_file.size))
 else:
-    all_data = load_data(EXCEL_PATH)
+    # Para o arquivo local, usamos a data de modificação
+    import os
+    try:
+        mtime = os.path.getmtime(EXCEL_PATH)
+    except:
+        mtime = "default"
+    all_data = load_data(EXCEL_PATH, force_reload=str(mtime))
 
 def get_base64_image(image_path):
     with open(image_path, "rb") as img_file:
@@ -1043,16 +1050,22 @@ if all_data:
             min_green = min(all_greens) if all_greens else 0
             max_green = max(all_greens) if all_greens else 0
             
-            op_text = f"""
-            <div style='background:#EBF8FF; border-left:5px solid #0D6B82; padding:15px; border-radius:8px; margin-bottom:20px; font-size:13px; color:#1A202C;'>
-                <b style='color:#0D6B82; text-transform:uppercase; font-size:11px;'>Leitura Operacional</b><br>
-                Os confrontos selecionados foram avaliados individualmente em suas linhas naturais de valor. A probabilidade média de <b>GREEN Consenso (Over 1.5)</b> varia de {min_green:.1f}% a {max_green:.1f}%.<br><br>
-            """
+            resumo_html = ""
             for idx, res in enumerate(st.session_state.block_results, start=1):
-                op_text += f"<b>{idx}. {res['confronto']}</b>: {res['obs']}<br>"
+                resumo_html += f"<b>{idx}. {res['confronto']}</b>: {res['obs']}<br>"
             
-            op_text += "<br><i>Regra operacional: A linha sugerida busca o equilíbrio entre probabilidade de acerto e proteção do capital. Considere a entrada se a odd de mercado for superior à odd justa calculada pelo modelo.</i></div>"
-            st.markdown(op_text, unsafe_allow_html=True)
+            # Layout nativo e limpo para evitar sobreposição
+            st.info(f"**Leitura Operacional**: Os confrontos selecionados foram avaliados individualmente. A probabilidade média de **GREEN Consenso (Over 1.5)** varia de {min_green:.1f}% a {max_green:.1f}%.")
+            
+            st.markdown(f"""
+                <div style='background:#EBF8FF; border-left:5px solid #0D6B82; padding:20px; border-radius:12px; margin-bottom:40px; font-size:13px; color:#1A202C; display:block; width:100%;'>
+                    {resumo_html}
+                    <div style='margin-top:15px; padding-top:10px; border-top:1px solid #CBD5E0; font-style:italic; font-size:11px; color:#718096;'>
+                        Regra operacional: A linha sugerida busca o equilíbrio entre probabilidade de acerto e proteção do capital. Considere a entrada se a odd de mercado for superior à odd justa calculada pelo modelo.
+                    </div>
+                </div>
+            """, unsafe_allow_html=True)
+            st.markdown("<div style='margin-bottom:30px;'></div>", unsafe_allow_html=True)
 
             cards = []
             for idx, res in enumerate(st.session_state.block_results, start=1):
