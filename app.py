@@ -822,7 +822,8 @@ if all_data:
                         
                         # Média de 0x0 Histórico para o Veto Sniper (Limite de 8%)
                         avg_zero_hist = (zero_m + zero_v) / 2 * 100
-                        is_veto = p0x0_stress > 10 or avg_zero_hist > 8
+                        # O Veto é ativado se o Estresse (ID) > 8% OU a Média Histórica > 8%
+                        is_veto = p0x0_stress > 8 or avg_zero_hist > 8
                         confirmado = bool(ge_real > 1.8 and not is_veto and not m_casa.empty and not v_fora.empty)
                         
                         # Métricas empíricas da condição específica: casa para o mandante e fora para o visitante.
@@ -854,23 +855,32 @@ if all_data:
                         
                         # 2. Distribuição Empírica (Prova Real)
                         def get_emp_metrics():
+                            # Fiel à planilha: o empírico usa a MÉDIA das frequências das equipes na condição
+                            comb_o05 = 100 - avg_zero_hist
                             comb_o15 = (home_emp['over15'] + away_emp['over15']) / 2
                             comb_o25 = (home_emp['over25'] + away_emp['over25']) / 2
-                            # Over 0.5 Real é 100% menos a média de 0x0
-                            comb_zero = 100 - avg_zero_hist
-                            return {0.5: comb_zero, 1.0: comb_o15, 1.5: comb_o15, 2.0: comb_o25, 2.5: comb_o25}
+                            # Para as linhas de proteção (1.0 e 2.0), usamos a linha de green imediatamente abaixo
+                            return {0.5: comb_o05, 1.0: comb_o15, 1.5: comb_o15, 2.0: comb_o25, 2.5: comb_o25}
                         probs_emp = get_emp_metrics()
                         
                         # 3. Tabela de Distribuição e Proteção (Consenso)
                         # Cálculo da Proteção Consenso: Para a linha N, a proteção é o Green da linha (N-0.5)
+                        # A proteção no Excel é a probabilidade de NÃO ter RED na linha N.
                         def get_protection_cons(ln):
+                            # Se a linha é 1.0, a proteção é a probabilidade de ter 1 ou mais gols (Over 0.5)
+                            # Se a linha é 1.5, a proteção é a mesma do Green (Over 1.5)
+                            # Se a linha é 2.0, a proteção é a probabilidade de ter 2 ou mais gols (Over 1.5)
                             if ln == 0.5: return (probs_poi[0.5] + probs_emp[0.5]) / 2
-                            prev_ln = 0.5 if ln == 1.0 else ln - 0.5 if ln > 1.0 else 0.5
-                            return (probs_poi[prev_ln] + probs_emp[prev_ln]) / 2
+                            if ln == 1.0: return (probs_poi[0.5] + probs_emp[0.5]) / 2
+                            if ln == 1.5: return (probs_poi[1.5] + probs_emp[1.5]) / 2
+                            if ln == 2.0: return (probs_poi[1.5] + probs_emp[1.5]) / 2
+                            if ln == 2.5: return (probs_poi[2.5] + probs_emp[2.5]) / 2
+                            return (probs_poi[ln] + probs_emp[ln]) / 2
 
-                        def get_leitura_planilha(g_cons, p_cons):
+                        def get_leitura_planilha(ln, g_cons, p_cons):
+                            # Regra: Green >= 75% ou Proteção >= 75% (apenas para linhas inteiras .00)
                             if g_cons >= 75: return "GREEN ≥75%"
-                            if p_cons >= 75: return "PROTEÇÃO ≥75%"
+                            if ".00" in f"{ln:.2f}" and p_cons >= 75: return "PROTEÇÃO ≥75%"
                             return "ABAIXO"
                         
                         dist_table = []
@@ -880,7 +890,7 @@ if all_data:
                         for ln in [0.5, 1.0, 1.5, 2.0, 2.5]:
                             g_cons = (probs_poi[ln] + probs_emp[ln]) / 2
                             p_cons = get_protection_cons(ln)
-                            leitura_ln = get_leitura_planilha(g_cons, p_cons)
+                            leitura_ln = get_leitura_planilha(ln, g_cons, p_cons)
                             
                             # Identificar marcos da fronteira
                             if g_cons >= 75:
