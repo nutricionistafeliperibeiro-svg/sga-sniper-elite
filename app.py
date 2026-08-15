@@ -827,18 +827,31 @@ if all_data:
                         probs_emp = get_emp_metrics()
                         
                         # 3. Tabela de Distribuição e Proteção (Consenso)
-                        def get_leitura_planilha(prob):
-                            if prob >= 75: return "GREEN ≥75%"
-                            if prob >= 60: return "PROTEÇÃO ≥75%"
+                        # Cálculo da Proteção Consenso: Para a linha N, a proteção é o Green da linha (N-0.5)
+                        def get_protection_cons(ln):
+                            if ln == 0.5: return (probs_poi[0.5] + probs_emp[0.5]) / 2
+                            prev_ln = 0.5 if ln == 1.0 else ln - 0.5 if ln > 1.0 else 0.5
+                            return (probs_poi[prev_ln] + probs_emp[prev_ln]) / 2
+
+                        def get_leitura_planilha(g_cons, p_cons):
+                            if g_cons >= 75: return "GREEN ≥75%"
+                            if p_cons >= 75: return "PROTEÇÃO ≥75%"
                             return "ABAIXO"
                         
                         dist_table = []
+                        fronteira_ln = "N/A"
                         for ln in [0.5, 1.0, 1.5, 2.0, 2.5]:
-                            cons = (probs_poi[ln] + probs_emp[ln]) / 2
+                            g_cons = (probs_poi[ln] + probs_emp[ln]) / 2
+                            p_cons = get_protection_cons(ln)
+                            leitura_ln = get_leitura_planilha(g_cons, p_cons)
+                            
+                            if g_cons >= 75:
+                                fronteira_ln = f"OVER {ln:.2f}".replace('.', ',')
+                                
                             dist_table.append({
                                 'linha': f"OVER {ln:.2f}".replace('.', ','),
-                                'green': cons,
-                                'leitura': get_leitura_planilha(cons)
+                                'green': g_cons,
+                                'leitura': leitura_ln
                             })
 
                         # Veto Sniper e Regra Operacional
@@ -942,6 +955,7 @@ if all_data:
                             'pais': m.get('pais', 'N/A'),
                             'liga': m.get('liga', 'N/A'),
                             'alertas': alertas,
+                            'fronteira': fronteira_ln,
                             'p_green': (probs_poi[1.5] + probs_emp[1.5]) / 2 # Chave para o sumário operacional
                         })
                     
@@ -1049,7 +1063,7 @@ if all_data:
                             <div><small>2+ EMP. MÍN.</small><b>{res['emp2']:.1f}%</b></div>
                             <div><small>3+ EMP. MÍN.</small><b>{res['emp3']:.1f}%</b></div>
                             <div><small>ÚLTIMOS 5</small><b>{res['ultimos5']:.2f}</b></div>
-                            <div><small>CONVERGÊNCIA</small><b style='color:{conv_color};'>{conv}</b></div>
+                            <div style='background:rgba(56,161,105,0.1); border-radius:4px; padding:2px;'><small style='color:#2F855A;'>FRONTEIRA</small><b style='color:#2F855A;'>{res['fronteira']}</b></div>
                         </div>
                     </article>
                 """)
