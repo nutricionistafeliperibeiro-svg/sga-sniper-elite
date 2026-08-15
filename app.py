@@ -937,7 +937,8 @@ if all_data:
                             'ultimos5': ultimos5,
                             'pais': m.get('pais', 'N/A'),
                             'liga': m.get('liga', 'N/A'),
-                            'alertas': alertas
+                            'alertas': alertas,
+                            'p_green': (probs_poi[1.5] + probs_emp[1.5]) / 2 # Chave para o sumário operacional
                         })
                     
                     # Ordem: melhor leitura -> maior confirmação empírica -> maior GE Real -> maior máquina.
@@ -984,13 +985,14 @@ if all_data:
             st.markdown("---")
 
             # Texto de Leitura Operacional Unificada (Estilo Copilot)
-            min_green = min([r['p_green'] for r in st.session_state.block_results])
-            max_green = max([r['p_green'] for r in st.session_state.block_results])
+            all_greens = [r['p_green'] for r in st.session_state.block_results]
+            min_green = min(all_greens) if all_greens else 0
+            max_green = max(all_greens) if all_greens else 0
             
             op_text = f"""
             <div style='background:#EBF8FF; border-left:5px solid #0D6B82; padding:15px; border-radius:8px; margin-bottom:20px; font-size:13px; color:#1A202C;'>
                 <b style='color:#0D6B82; text-transform:uppercase; font-size:11px;'>Leitura Operacional</b><br>
-                Os confrontos selecionados foram avaliados individualmente em suas linhas naturais de valor. A probabilidade de <b>GREEN direto</b> nas linhas sugeridas varia de {min_green:.1f}% a {max_green:.1f}%.<br><br>
+                Os confrontos selecionados foram avaliados individualmente em suas linhas naturais de valor. A probabilidade média de <b>GREEN Consenso (Over 1.5)</b> varia de {min_green:.1f}% a {max_green:.1f}%.<br><br>
             """
             for idx, res in enumerate(st.session_state.block_results, start=1):
                 op_text += f"<b>{idx}. {res['confronto']}</b>: {res['obs']}<br>"
