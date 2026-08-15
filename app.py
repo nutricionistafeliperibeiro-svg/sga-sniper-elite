@@ -777,8 +777,12 @@ if all_data:
                         avg_id = (m.get('dispersao', 1) + v.get('dispersao', 1)) / 2
                         ge_real = l_total * np.sqrt(avg_id)
                         
-                        m_casa = df_dados[df_dados['Mandante'] == conf['mandante']].sort_values('Data', ascending=False).head(12)
-                        v_fora = df_dados[df_dados['Visitante'] == conf['visitante']].sort_values('Data', ascending=False).head(12)
+                        # Filtro Robusto de Histórico (Strip e Case-Insensitive)
+                        m_name_clean = str(conf['mandante']).strip().lower()
+                        v_name_clean = str(conf['visitante']).strip().lower()
+                        
+                        m_casa = df_dados[df_dados['Mandante'].astype(str).str.strip().str.lower() == m_name_clean].sort_values('Data', ascending=False).head(12)
+                        v_fora = df_dados[df_dados['Visitante'].astype(str).str.strip().str.lower() == v_name_clean].sort_values('Data', ascending=False).head(12)
                         
                         zero_m = len(m_casa[(m_casa['GM_M'] == 0) & (m_casa['GM_V'] == 0)]) / len(m_casa) if len(m_casa) else 1
                         zero_v = len(v_fora[(v_fora['GM_M'] == 0) & (v_fora['GM_V'] == 0)]) / len(v_fora) if len(v_fora) else 1
