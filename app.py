@@ -864,6 +864,11 @@ if all_data:
                         veto_text = "⚠️ ALERTA DE VETO (0x0)" if is_veto_sniper else "✅ SEM VETO POR 0x0"
                         regra_op = "🚀 ENTRADA CONFIRMADA EM OVER" if ge_real > 1.8 and not is_veto_sniper else "🛡️ RECOMENDADO CAUTELA / UNDER"
                         
+                        # Detalhes do Veto e Modelo (Fiel à Prova Real)
+                        modelo_est = m.get('modelo', 'Poisson')
+                        p0x0_real_val = (poisson.pmf(0, l_m) * poisson.pmf(0, l_v)) * 100
+                        veto_detalhe = f"Prob. Real: {p0x0_real_val:.1f}% | Estresse (ID): {p0x0_stress:.1f}% | Modelo: {modelo_est}"
+                        
                         # Leitura de Linha (Fiel à Planilha)
                         def get_leitura_planilha(prob):
                             if prob >= 75: return "GREEN ≥75%"
@@ -880,7 +885,7 @@ if all_data:
                             leitura, status_key, border_color, bg_color = 'CAUTELA', 1, '#E53E3E', '#FFF5F5'
 
                         linha_sugerida = linha_pref
-                        obs = f"<b>{veto_text}</b><br>REGRA OPERACIONAL: {regra_op}"
+                        obs = f"<b>{veto_text}</b><br><span style='font-size:10px; opacity:0.8;'>{veto_detalhe}</span><br>REGRA OPERACIONAL: {regra_op}"
 
                         # Identificação de Rankings de Elite para Alertas
                         # A aba Equipes V3 não possui as colunas legadas 'Liga', 'GM', 'GS' e 'Jogos'.
