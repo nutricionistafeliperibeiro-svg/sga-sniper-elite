@@ -860,21 +860,27 @@ if all_data:
                         conv_status = "ALTA" if abs(probs_poi[1.5] - probs_emp[1.5]) < 15 else "MODERADA"
                         analise_suporte = f"Convergência {conv_status}. Matemática indica volume de {ge_real:.2f} gols, enquanto a Prova Real sustenta {probs_emp[1.5]:.1f}% de Over 1.5."
                         
-                        # Classificação e Ajuste de Veto
-                        if is_veto_sniper:
-                            leitura, status_key, border_color, bg_color = 'VETO CRÍTICO', 0, '#718096', '#F7FAFC'
-                            linha_pref = "NÃO APOSTAR"
-                            linha_prot = "NÃO APOSTAR"
-                            analise_suporte = f"⚠️ VETO: Risco de 0x0 elevado ({p0x0_stress:.1f}%). Entrada condenada por fragilidade técnica impeditiva."
-                        elif prob_pref >= 75:
+                        # Classificação e Regra Operacional (Fiel à Planilha)
+                        veto_text = "⚠️ ALERTA DE VETO (0x0)" if is_veto_sniper else "✅ SEM VETO POR 0x0"
+                        regra_op = "🚀 ENTRADA CONFIRMADA EM OVER" if ge_real > 1.8 and not is_veto_sniper else "🛡️ RECOMENDADO CAUTELA / UNDER"
+                        
+                        # Leitura de Linha (Fiel à Planilha)
+                        def get_leitura_planilha(prob):
+                            if prob >= 75: return "GREEN ≥75%"
+                            if prob >= 60: return "PROTEÇÃO ≥75%"
+                            return "ABAIXO"
+                        
+                        leitura_pref = get_leitura_planilha(prob_pref)
+                        leitura_prot = get_leitura_planilha(prob_prot)
+                        
+                        # Status do Card (Fiel à Planilha)
+                        if ge_real > 1.8 and not is_veto_sniper:
                             leitura, status_key, border_color, bg_color = 'FORTE', 3, '#0F5FA8', '#EBF8FF'
-                        elif prob_pref >= 65:
-                            leitura, status_key, border_color, bg_color = 'BOA', 2, '#4299E1', '#F7FCFF'
                         else:
                             leitura, status_key, border_color, bg_color = 'CAUTELA', 1, '#E53E3E', '#FFF5F5'
 
                         linha_sugerida = linha_pref
-                        obs = analise_suporte
+                        obs = f"<b>{veto_text}</b><br>REGRA OPERACIONAL: {regra_op}"
 
                         # Identificação de Rankings de Elite para Alertas
                         # A aba Equipes V3 não possui as colunas legadas 'Liga', 'GM', 'GS' e 'Jogos'.
@@ -932,6 +938,8 @@ if all_data:
                             'p_green': prob_pref,
                             'p_push': prob_prot,
                             'linha_prot': linha_prot,
+                            'leitura_pref': leitura_pref,
+                            'leitura_prot': leitura_prot,
                             'j_casa': j_casa,
                             'j_fora': j_fora,
                             'emp2': emp_2_min,
@@ -1016,14 +1024,18 @@ if all_data:
                                 </div>
                             </div>
                             <div class='line' style='color:{res['border_color']};'>
-                                <span style='font-size:9px; color:#718096; display:block;'>PREFERENCIAL</span>
-                                {res['linha']}
-                                <span style='font-size:9px; color:#718096; display:block; margin-top:4px;'>PROTEGIDA</span>
-                                <span style='font-size:11px; opacity:0.8;'>{res['linha_prot']}</span>
+                                <div style='margin-bottom:8px;'>
+                                    <span style='font-size:9px; color:#718096; display:block;'>PREFERENCIAL</span>
+                                    <b>{res['linha']}</b> <span style='font-size:10px; opacity:0.7;'>({res['leitura_pref']})</span>
+                                </div>
+                                <div>
+                                    <span style='font-size:9px; color:#718096; display:block;'>PROTEGIDA</span>
+                                    <b>{res['linha_prot']}</b> <span style='font-size:10px; opacity:0.7;'>({res['leitura_prot']})</span>
+                                </div>
                             </div>
                         </div>
-                        <div style='margin:10px 0; padding:10px; background:rgba(0,0,0,0.03); border-radius:8px; font-size:11px; line-height:1.4;'>
-                            <b>ANÁLISE DE SUPORTE:</b> {res['obs']}
+                        <div style='margin:10px 0; padding:12px; background:rgba(0,0,0,0.03); border-radius:8px; font-size:12px; line-height:1.5; border-left:4px solid {res['border_color']};'>
+                            {res['obs']}
                         </div>
                         <div class='metric-grid'>
                             <div><small>J CASA</small><b>{res['j_casa']}</b></div>
