@@ -251,7 +251,9 @@ LOGO_B64 = get_base64_image("logo_final.png") if os.path.exists("logo_final.png"
 
 def normalize_text(text):
     if not isinstance(text, str): return ""
-    return "".join(c for c in unicodedata.normalize('NFD', text) if unicodedata.category(c) != 'Mn').lower()
+    # Normalização ultra-robusta: remove acentos, espaços extras e converte para minúsculas
+    text = text.strip().lower()
+    return "".join(c for c in unicodedata.normalize('NFD', text) if unicodedata.category(c) != 'Mn')
 
 def format_avg_html(val, color):
     weight = "800" if val >= 3.0 else "400"
@@ -661,23 +663,20 @@ if all_data:
         st.markdown('''<div class="sim-header"><h3 style="margin:0; color:#2C5282;">🚀 Análise — Montagem em Bloco</h3><p style="margin:0; color:#4A5568; font-size:0.9rem;">Selecione vários confrontos e classifique os melhores para análise de gols e linhas asiáticas.</p></div>''', unsafe_allow_html=True)
         clubes_bloco_raw = sorted(df_equipes['Equipe'].dropna().astype(str).unique().tolist())
         
-        # Barra de Ferramentas Reestruturada
-        t_col1, t_col2, t_col3, t_col4 = st.columns([2.5, 1.2, 0.8, 0.8])
+        # Barra de Ferramentas — Apenas Ferramentas
+        t_col1, t_col2, t_col3 = st.columns([1.5, 0.8, 0.8])
         with t_col1:
-            # Filtro inteligente integrado: agora mais discreto e com instrução clara
-            search_bloco = st.text_input("Filtrar equipes...", key="search_bloco_input", placeholder="🔍 Digite aqui para filtrar (ex: Gremio)", label_visibility="collapsed")
-        with t_col2:
             new_file_analise = st.file_uploader("XLSX", type=["xlsx"], label_visibility="collapsed", key="excel_uploader_analise")
             if new_file_analise:
                 st.session_state.uploaded_file = new_file_analise
                 st.rerun()
-        with t_col3:
+        with t_col2:
             if st.button("💾 Salvar", use_container_width=True):
                 with open(st.session_state.block_matches_file, 'w') as f:
                     json.dump(st.session_state.block_matches, f)
                 st.session_state.block_notice = "✅ Salvo!"
                 st.rerun()
-        with t_col4:
+        with t_col3:
             if st.button("📂 Abrir", use_container_width=True):
                 if os.path.exists(st.session_state.block_matches_file):
                     with open(st.session_state.block_matches_file, 'r') as f:
@@ -689,22 +688,19 @@ if all_data:
                     st.session_state.block_notice = "❌ Vazio"
                     st.rerun()
 
-        # Lógica de Busca Robusta (Insensível a acentos)
-        norm_search_bloco = normalize_text(search_bloco)
-        clubes_bloco = [c for c in clubes_bloco_raw if norm_search_bloco in normalize_text(c)]
-
         if st.session_state.block_notice:
             st.toast(st.session_state.block_notice)
             st.session_state.block_notice = ''
 
         with st.form('form_adicionar_confronto', clear_on_submit=True):
+            st.markdown('<p style="font-size:0.85rem; color:#718096; margin-bottom:10px;"><b>Dica:</b> Digite o nome da equipe diretamente nos campos abaixo para buscar.</p>', unsafe_allow_html=True)
             b_col1, b_col2, b_col3 = st.columns([2, 0.4, 2])
             with b_col1:
-                bloco_mandante = st.selectbox('Mandante', ['Selecione...'] + clubes_bloco, key='bloco_mandante')
+                bloco_mandante = st.selectbox('Mandante', ['Selecione...'] + clubes_bloco_raw, key='bloco_mandante')
             with b_col2:
                 st.markdown('<div style="font-size:1.2rem; font-weight:800; color:#CBD5E0; height:70px; display:flex; align-items:center; justify-content:center;">VS</div>', unsafe_allow_html=True)
             with b_col3:
-                bloco_visitante = st.selectbox('Visitante', ['Selecione...'] + clubes_bloco, key='bloco_visitante')
+                bloco_visitante = st.selectbox('Visitante', ['Selecione...'] + clubes_bloco_raw, key='bloco_visitante')
             adicionar_bloco = st.form_submit_button('＋ Adicionar confronto ao bloco', use_container_width=True)
         if adicionar_bloco:
             if bloco_mandante == 'Selecione...' or bloco_visitante == 'Selecione...':
