@@ -806,74 +806,72 @@ if all_data:
                         emp_2_min = min(home_emp['over2plus'], away_emp['over2plus'])
                         emp_3_min = min(home_emp['over3plus'], away_emp['over3plus'])
                         
-                        # DETERMINAÇÃO DINÂMICA DA LINHA ALVO (Sincronizado com Confronto/Prova Real)
-                        # A linha é definida pelo GE Real (Fato)
-                        if ge_real >= 2.40:
-                            target_line = 2.0
-                            label_linha = "OVER 2,00"
-                        elif ge_real >= 1.85:
-                            target_line = 1.5
-                            label_linha = "OVER 1,50"
-                        elif ge_real >= 1.50:
-                            target_line = 1.0
-                            label_linha = "OVER 1,00"
+                        # --- CONCILIAÇÃO SOBERANA (CONFRONTO x PROVA REAL) ---
+                        
+                        # 1. Distribuição Estatística (Poisson)
+                        def get_poisson_probs(ge):
+                            return {
+                                0.5: (1 - poisson.cdf(0, ge)) * 100,
+                                1.0: (1 - poisson.cdf(1, ge)) * 100,
+                                1.5: (1 - poisson.cdf(1, ge)) * 100,
+                                2.0: (1 - poisson.cdf(2, ge)) * 100,
+                                2.5: (1 - poisson.cdf(2, ge)) * 100
+                            }
+                        probs_poi = get_poisson_probs(ge_real)
+                        
+                        # 2. Distribuição Empírica (Prova Real)
+                        # j_casa e j_fora já calculados. Vamos pegar os percentuais reais.
+                        def get_empirical_probs(h, a):
+                            comb = (h + a) / 2
+                            return {
+                                0.5: 100 - ((m_casa['GM_M'] + m_casa['GM_V'] == 0).mean() * 100 + (v_fora['GM_M'] + v_fora['GM_V'] == 0).mean() * 100) / 2,
+                                1.0: comb, # Simplificação: 2+ gols como base de volume
+                                1.5: comb,
+                                2.0: (home_emp['over3plus'] + away_emp['over3plus']) / 2,
+                                2.5: (home_emp['over3plus'] + away_emp['over3plus']) / 2
+                            }
+                        probs_emp = get_empirical_probs(home_emp['over15'], away_emp['over15'])
+                        
+                        # 3. Consenso (Média Ponderada ou Mínimo Conservador)
+                        # Usamos o Consenso para definir as sugestões
+                        consenso = {line: (probs_poi[line] + probs_emp[line]) / 2 for line in [1.0, 1.5, 2.0]}
+                        
+                        # Determinação das Duas Linhas (Preferencial e Protegida)
+                        if ge_real >= 2.6:
+                            linha_pref, prob_pref = "OVER 2,00", consenso[2.0]
+                            linha_prot, prob_prot = "OVER 1,50", consenso[1.5]
+                        elif ge_real >= 1.9:
+                            linha_pref, prob_pref = "OVER 1,50", consenso[1.5]
+                            linha_prot, prob_prot = "OVER 1,00", consenso[1.0]
                         else:
-                            target_line = 0.5
-                            label_linha = "OVER 0,50"
+                            linha_pref, prob_pref = "OVER 1,00", consenso[1.0]
+                            linha_prot, prob_prot = "OVER 0,50", probs_poi[0.5]
 
-                        # Cálculo de Probabilidades para a Linha Alvo
-                        # Green: superando a linha / Push: batendo na linha exata
-                        if target_line == 2.0:
-                            p_green = float((1 - poisson.cdf(2, ge_real)) * 100) # 3+ gols
-                            p_push = float(poisson.pmf(2, ge_real) * 100)        # 2 gols exatos
-                        elif target_line == 1.5:
-                            p_green = float((1 - poisson.cdf(1, ge_real)) * 100) # 2+ gols
-                            p_push = 0.0                                         # Linha quebrada não tem push
-                        elif target_line == 1.0:
-                            p_green = float((1 - poisson.cdf(1, ge_real)) * 100) # 2+ gols
-                            p_push = float(poisson.pmf(1, ge_real) * 100)        # 1 gol exato
-                        else:
-                            p_green = float((1 - poisson.cdf(0, ge_real)) * 100) # 1+ gol
-                            p_push = 0.0
-
-                        # Média do total de gols nos últimos cinco jogos
+                        # Veto Sniper
+                        is_veto_sniper = p0x0_stress > 10 or (zero_m + zero_v) / 2 > 0.08
+                        
+                        # Análise de Suporte
                         m_recent5 = df_dados[(df_dados['Mandante'] == conf['mandante']) | (df_dados['Visitante'] == conf['mandante'])].sort_values('Data', ascending=False).head(5)
                         v_recent5 = df_dados[(df_dados['Mandante'] == conf['visitante']) | (df_dados['Visitante'] == conf['visitante'])].sort_values('Data', ascending=False).head(5)
                         m_last5_avg = ((m_recent5['GM_M'].astype(float) + m_recent5['GM_V'].astype(float)).mean() if not m_recent5.empty else 0.0)
                         v_last5_avg = ((v_recent5['GM_M'].astype(float) + v_recent5['GM_V'].astype(float)).mean() if not v_recent5.empty else 0.0)
                         ultimos5 = (m_last5_avg + v_last5_avg) / 2
 
-                        # CLASSIFICAÇÃO DINÂMICA (Baseada na Linha Alvo e Veto)
-                        is_veto_sniper = p0x0_stress > 10 or (zero_m + zero_v) / 2 > 0.08
-                        
-                        if ge_real > 1.8 and not is_veto_sniper:
-                            if p_green >= 70:
-                                leitura = 'FORTE'
-                                status_key = 3
-                                border_color, bg_color = '#0F5FA8', '#EBF8FF'
-                            else:
-                                leitura = 'BOA'
-                                status_key = 2
-                                border_color, bg_color = '#4299E1', '#F7FCFF'
-                        else:
-                            leitura = 'ELEGÍVEL COM CAUTELA'
-                            status_key = 1
-                            border_color, bg_color = '#E53E3E', '#FFF5F5'
-                        
-                        linha_sugerida = label_linha
-                        if is_veto_sniper and target_line >= 1.5:
-                            linha_sugerida = "OVER 1,00 PROTEGIDO"
-                        elif is_veto_sniper:
-                            linha_sugerida = "NÃO APOSTAR"
-
-                        # Observação técnica coerente com a linha
-                        if p_push > 0:
-                            obs = f"{p_green:.1f}% de GREEN e {p_push:.1f}% de PUSH na linha {label_linha}."
-                        else:
-                            obs = f"{p_green:.1f}% de GREEN direto na linha {label_linha}."
-                        
+                        conv_status = "ALTA" if abs(probs_poi[1.5] - probs_emp[1.5]) < 15 else "MODERADA"
+                        analise_suporte = f"Convergência {conv_status}. Matemática indica volume de {ge_real:.2f} gols, enquanto a Prova Real sustenta {probs_emp[1.5]:.1f}% de Over 1.5."
                         if is_veto_sniper:
-                            obs += " Alerta de veto detectado na Prova Real."
+                            analise_suporte += " ⚠️ ALERTA: Risco de 0x0 detectado, priorizar linha protegida."
+                        
+                        # Classificação
+                        if prob_pref >= 75 and not is_veto_sniper:
+                            leitura, status_key, border_color, bg_color = 'FORTE', 3, '#0F5FA8', '#EBF8FF'
+                        elif prob_pref >= 65 and not is_veto_sniper:
+                            leitura, status_key, border_color, bg_color = 'BOA', 2, '#4299E1', '#F7FCFF'
+                        else:
+                            leitura, status_key, border_color, bg_color = 'CAUTELA', 1, '#E53E3E', '#FFF5F5'
+
+                        linha_sugerida = linha_pref
+                        obs = analise_suporte
 
                         # Identificação de Rankings de Elite para Alertas
                         # A aba Equipes V3 não possui as colunas legadas 'Liga', 'GM', 'GS' e 'Jogos'.
@@ -928,8 +926,9 @@ if all_data:
                             'ge_real': ge_real,
                             'p0x0': p0x0_stress,
                             'lambda_total': l_total,
-                            'p_green': p_green,
-                            'p_push': p_push,
+                            'p_green': prob_pref,
+                            'p_push': prob_prot,
+                            'linha_prot': linha_prot,
                             'j_casa': j_casa,
                             'j_fora': j_fora,
                             'emp2': emp_2_min,
@@ -1013,7 +1012,15 @@ if all_data:
                                     {' '.join([f"<span style='background:#2D3748; color:white; padding:1px 5px; border-radius:3px; font-size:9px; margin-right:3px;'>{a}</span>" for a in res['alertas']])}
                                 </div>
                             </div>
-                            <div class='line' style='color:{res['border_color']};'>{res['linha']}</div>
+                            <div class='line' style='color:{res['border_color']};'>
+                                <span style='font-size:9px; color:#718096; display:block;'>PREFERENCIAL</span>
+                                {res['linha']}
+                                <span style='font-size:9px; color:#718096; display:block; margin-top:4px;'>PROTEGIDA</span>
+                                <span style='font-size:11px; opacity:0.8;'>{res['linha_prot']}</span>
+                            </div>
+                        </div>
+                        <div style='margin:10px 0; padding:10px; background:rgba(0,0,0,0.03); border-radius:8px; font-size:11px; line-height:1.4;'>
+                            <b>ANÁLISE DE SUPORTE:</b> {res['obs']}
                         </div>
                         <div class='metric-grid'>
                             <div><small>J CASA</small><b>{res['j_casa']}</b></div>
@@ -1021,8 +1028,8 @@ if all_data:
                             <div><small>λ TOTAL</small><b>{res['lambda_total']:.2f}</b></div>
                             <div><small>GE REAL</small><b class='blue'>{res['ge_real']:.2f}</b></div>
                             <div><small>RISCO 0x0</small><b class='red'>{res['p0x0']:.1f}%</b></div>
-                            <div><small>PROB. PUSH</small><b>{res['p_push']:.1f}%</b></div>
-                            <div style='background:rgba(43,108,176,.1); border-radius:4px; padding:2px;'><small style='color:#2B6CB0;'>PROB. GREEN</small><b style='color:#2B6CB0;'>{res['p_green']:.1f}%</b></div>
+                            <div style='background:rgba(43,108,176,.1); border-radius:4px; padding:2px;'><small style='color:#2B6CB0;'>CONS. PREF.</small><b style='color:#2B6CB0;'>{res['p_green']:.1f}%</b></div>
+                            <div><small>CONS. PROT.</small><b>{res['p_push']:.1f}%</b></div>
                             <div><small>2+ EMP. MÍN.</small><b>{res['emp2']:.1f}%</b></div>
                             <div><small>3+ EMP. MÍN.</small><b>{res['emp3']:.1f}%</b></div>
                             <div><small>ÚLTIMOS 5</small><b>{res['ultimos5']:.2f}</b></div>
@@ -1040,7 +1047,7 @@ if all_data:
                     .match { display:flex; flex-direction:column; gap:3px; font-size:15px; }
                     .match span { color:#718096; font-size:10px; }
                     .line { text-align:right; font-size:13px; font-weight:800; text-transform:uppercase; white-space:nowrap; }
-                    .metric-grid { display:grid; grid-template-columns:repeat(11, minmax(62px,1fr)); gap:7px; border-top:1px solid rgba(113,128,150,.18); padding-top:10px; }
+                    .metric-grid { display:grid; grid-template-columns:repeat(11, minmax(62px,1fr)); gap:7px; border-top:1px solid rgba(113,128,150,.1); padding-top:10px; }
                     .metric-grid div { display:flex; flex-direction:column; gap:3px; min-width:0; }
                     .metric-grid small { color:#718096; font-size:8px; font-weight:700; white-space:nowrap; }
                     .metric-grid b { color:#2D3748; font-size:12px; font-variant-numeric:tabular-nums; }
