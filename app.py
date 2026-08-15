@@ -806,85 +806,55 @@ if all_data:
                         emp_2_min = min(home_emp['over2plus'], away_emp['over2plus'])
                         emp_3_min = min(home_emp['over3plus'], away_emp['over3plus'])
                         
-                        # --- CONCILIAÇÃO SOBERANA (CONFRONTO x PROVA REAL) ---
+                        # --- CONCILIAÇÃO SOBERANA (SIMULAÇÃO INTEGRAL DAS TABELAS) ---
                         
                         # 1. Distribuição Estatística (Poisson)
-                        def get_poisson_probs(ge):
-                            return {
-                                0.5: (1 - poisson.cdf(0, ge)) * 100,
-                                1.0: (1 - poisson.cdf(1, ge)) * 100,
-                                1.5: (1 - poisson.cdf(1, ge)) * 100,
-                                2.0: (1 - poisson.cdf(2, ge)) * 100,
-                                2.5: (1 - poisson.cdf(2, ge)) * 100
-                            }
-                        probs_poi = get_poisson_probs(ge_real)
+                        def get_poi_metrics(ge):
+                            lines = [0.5, 1.0, 1.5, 2.0, 2.5]
+                            return {ln: (1 - poisson.cdf(0 if ln==0.5 else 1 if ln<=1.5 else 2, ge)) * 100 for ln in lines}
+                        probs_poi = get_poi_metrics(ge_real)
                         
                         # 2. Distribuição Empírica (Prova Real)
-                        # j_casa e j_fora já calculados. Vamos pegar os percentuais reais.
-                        def get_empirical_probs(h, a):
-                            comb = (h + a) / 2
-                            return {
-                                0.5: 100 - ((m_casa['GM_M'] + m_casa['GM_V'] == 0).mean() * 100 + (v_fora['GM_M'] + v_fora['GM_V'] == 0).mean() * 100) / 2,
-                                1.0: comb, # Simplificação: 2+ gols como base de volume
-                                1.5: comb,
-                                2.0: (home_emp['over3plus'] + away_emp['over3plus']) / 2,
-                                2.5: (home_emp['over3plus'] + away_emp['over3plus']) / 2
-                            }
-                        probs_emp = get_empirical_probs(home_emp['over15'], away_emp['over15'])
+                        def get_emp_metrics():
+                            comb_o15 = (home_emp['over15'] + away_emp['over15']) / 2
+                            comb_o25 = (home_emp['over25'] + away_emp['over25']) / 2
+                            comb_zero = 100 - ((m_casa['GM_M'] + m_casa['GM_V'] == 0).mean() * 100 + (v_fora['GM_M'] + v_fora['GM_V'] == 0).mean() * 100) / 2
+                            return {0.5: comb_zero, 1.0: comb_o15, 1.5: comb_o15, 2.0: comb_o25, 2.5: comb_o25}
+                        probs_emp = get_emp_metrics()
                         
-                        # 3. Consenso (Média Ponderada ou Mínimo Conservador)
-                        # Usamos o Consenso para definir as sugestões
-                        consenso = {line: (probs_poi[line] + probs_emp[line]) / 2 for line in [1.0, 1.5, 2.0]}
-                        
-                        # Determinação das Duas Linhas (Preferencial e Protegida)
-                        if ge_real >= 2.6:
-                            linha_pref, prob_pref = "OVER 2,00", consenso[2.0]
-                            linha_prot, prob_prot = "OVER 1,50", consenso[1.5]
-                        elif ge_real >= 1.9:
-                            linha_pref, prob_pref = "OVER 1,50", consenso[1.5]
-                            linha_prot, prob_prot = "OVER 1,00", consenso[1.0]
-                        else:
-                            linha_pref, prob_pref = "OVER 1,00", consenso[1.0]
-                            linha_prot, prob_prot = "OVER 0,50", probs_poi[0.5]
-
-                        # Veto Sniper
-                        is_veto_sniper = p0x0_stress > 10 or (zero_m + zero_v) / 2 > 0.08
-                        
-                        # Análise de Suporte
-                        m_recent5 = df_dados[(df_dados['Mandante'] == conf['mandante']) | (df_dados['Visitante'] == conf['mandante'])].sort_values('Data', ascending=False).head(5)
-                        v_recent5 = df_dados[(df_dados['Mandante'] == conf['visitante']) | (df_dados['Visitante'] == conf['visitante'])].sort_values('Data', ascending=False).head(5)
-                        m_last5_avg = ((m_recent5['GM_M'].astype(float) + m_recent5['GM_V'].astype(float)).mean() if not m_recent5.empty else 0.0)
-                        v_last5_avg = ((v_recent5['GM_M'].astype(float) + v_recent5['GM_V'].astype(float)).mean() if not v_recent5.empty else 0.0)
-                        ultimos5 = (m_last5_avg + v_last5_avg) / 2
-
-                        conv_status = "ALTA" if abs(probs_poi[1.5] - probs_emp[1.5]) < 15 else "MODERADA"
-                        analise_suporte = f"Convergência {conv_status}. Matemática indica volume de {ge_real:.2f} gols, enquanto a Prova Real sustenta {probs_emp[1.5]:.1f}% de Over 1.5."
-                        
-                        # Classificação e Regra Operacional (Fiel à Planilha)
-                        veto_text = "⚠️ ALERTA DE VETO (0x0)" if is_veto_sniper else "✅ SEM VETO POR 0x0"
-                        regra_op = "🚀 ENTRADA CONFIRMADA EM OVER" if ge_real > 1.8 and not is_veto_sniper else "🛡️ RECOMENDADO CAUTELA / UNDER"
-                        
-                        # Detalhes do Veto e Modelo (Fiel à Prova Real)
-                        modelo_est = m.get('modelo', 'Poisson')
-                        p0x0_real_val = (poisson.pmf(0, l_m) * poisson.pmf(0, l_v)) * 100
-                        veto_detalhe = f"Prob. Real: {p0x0_real_val:.1f}% | Estresse (ID): {p0x0_stress:.1f}% | Modelo: {modelo_est}"
-                        
-                        # Leitura de Linha (Fiel à Planilha)
+                        # 3. Tabela de Distribuição e Proteção (Consenso)
                         def get_leitura_planilha(prob):
                             if prob >= 75: return "GREEN ≥75%"
                             if prob >= 60: return "PROTEÇÃO ≥75%"
                             return "ABAIXO"
                         
-                        leitura_pref = get_leitura_planilha(prob_pref)
-                        leitura_prot = get_leitura_planilha(prob_prot)
+                        dist_table = []
+                        for ln in [0.5, 1.0, 1.5, 2.0, 2.5]:
+                            cons = (probs_poi[ln] + probs_emp[ln]) / 2
+                            dist_table.append({
+                                'linha': f"OVER {ln:.2f}".replace('.', ','),
+                                'green': cons,
+                                'leitura': get_leitura_planilha(cons)
+                            })
+
+                        # Veto Sniper e Regra Operacional
+                        is_veto_sniper = p0x0_stress > 10 or (zero_m + zero_v) / 2 > 0.08
+                        veto_text = "⚠️ ALERTA DE VETO (0x0)" if is_veto_sniper else "✅ SEM VETO POR 0x0"
+                        regra_op = "🚀 ENTRADA CONFIRMADA EM OVER" if ge_real > 1.8 and not is_veto_sniper else "🛡️ RECOMENDADO CAUTELA / UNDER"
                         
-                        # Status do Card (Fiel à Planilha)
-                        if ge_real > 1.8 and not is_veto_sniper:
+                        # Detalhes do Veto e Modelo
+                        modelo_est = m.get('modelo', 'Poisson')
+                        p0x0_real_val = (poisson.pmf(0, l_m) * poisson.pmf(0, l_v)) * 100
+                        veto_detalhe = f"Prob. Real: {p0x0_real_val:.1f}% | Estresse (ID): {p0x0_stress:.1f}% | Modelo: {modelo_est}"
+                        
+                        # Status do Card (VERMELHO APENAS SE REPROVADO)
+                        if is_veto_sniper:
+                            leitura, status_key, border_color, bg_color = 'REPROVADO', 0, '#E53E3E', '#FFF5F5'
+                        elif ge_real > 1.8:
                             leitura, status_key, border_color, bg_color = 'FORTE', 3, '#0F5FA8', '#EBF8FF'
                         else:
-                            leitura, status_key, border_color, bg_color = 'CAUTELA', 1, '#E53E3E', '#FFF5F5'
+                            leitura, status_key, border_color, bg_color = 'CAUTELA', 1, '#4299E1', '#F7FCFF'
 
-                        linha_sugerida = linha_pref
                         obs = f"<b>{veto_text}</b><br><span style='font-size:10px; opacity:0.8;'>{veto_detalhe}</span><br>REGRA OPERACIONAL: {regra_op}"
 
                         # Identificação de Rankings de Elite para Alertas
@@ -940,11 +910,7 @@ if all_data:
                             'ge_real': ge_real,
                             'p0x0': p0x0_stress,
                             'lambda_total': l_total,
-                            'p_green': prob_pref,
-                            'p_push': prob_prot,
-                            'linha_prot': linha_prot,
-                            'leitura_pref': leitura_pref,
-                            'leitura_prot': leitura_prot,
+                            'dist_table': dist_table,
                             'j_casa': j_casa,
                             'j_fora': j_fora,
                             'emp2': emp_2_min,
@@ -956,7 +922,7 @@ if all_data:
                         })
                     
                     # Ordem: melhor leitura -> maior confirmação empírica -> maior GE Real -> maior máquina.
-                    st.session_state.block_results = sorted(results, key=lambda x: (x['status_key'], x['p_green'], x['emp2'], x['ge_real'], x['maquina'], x['cruzamento']), reverse=True)
+                    st.session_state.block_results = sorted(results, key=lambda x: (x['status_key'], x['ge_real'], x['emp2'], x['maquina'], x['cruzamento']), reverse=True)
                     st.session_state.block_notice = '✅ Classificação concluída com sucesso!'
                     st.rerun()
         
@@ -1028,28 +994,33 @@ if all_data:
                                     {' '.join([f"<span style='background:#2D3748; color:white; padding:1px 5px; border-radius:3px; font-size:9px; margin-right:3px;'>{a}</span>" for a in res['alertas']])}
                                 </div>
                             </div>
-                            <div class='line' style='color:{res['border_color']};'>
-                                <div style='margin-bottom:8px;'>
-                                    <span style='font-size:9px; color:#718096; display:block;'>PREFERENCIAL</span>
-                                    <b>{res['linha']}</b> <span style='font-size:10px; opacity:0.7;'>({res['leitura_pref']})</span>
-                                </div>
-                                <div>
-                                    <span style='font-size:9px; color:#718096; display:block;'>PROTEGIDA</span>
-                                    <b>{res['linha_prot']}</b> <span style='font-size:10px; opacity:0.7;'>({res['leitura_prot']})</span>
-                                </div>
+                            <div class='line' style='color:{res['border_color']}; text-align:right;'>
+                                <span style='font-size:9px; color:#718096; display:block;'>GE REAL (FATO)</span>
+                                <b style='font-size:1.4rem;'>{res['ge_real']:.2f}</b>
                             </div>
                         </div>
-                        <div style='margin:10px 0; padding:12px; background:rgba(0,0,0,0.03); border-radius:8px; font-size:12px; line-height:1.5; border-left:4px solid {res['border_color']};'>
-                            {res['obs']}
+                        
+                        <div style='display:grid; grid-template-columns: 1.2fr 2fr; gap:15px; margin:12px 0;'>
+                            <div style='padding:12px; background:rgba(0,0,0,0.03); border-radius:8px; font-size:12px; line-height:1.5; border-left:4px solid {res['border_color']};'>
+                                {res['obs']}
+                            </div>
+                            <div style='background:white; border:1px solid #E2E8F0; border-radius:8px; padding:8px;'>
+                                <table style='width:100%; font-size:10px; border-collapse:collapse;'>
+                                    <tr style='border-bottom:1px solid #EDF2F7; color:#718096;'>
+                                        <th style='text-align:left; padding:4px;'>LINHA</th>
+                                        <th style='text-align:center; padding:4px;'>GREEN CONS.</th>
+                                        <th style='text-align:right; padding:4px;'>LEITURA</th>
+                                    </tr>
+                                    {''.join([f"<tr><td style='padding:4px; font-weight:700;'>{row['linha']}</td><td style='padding:4px; text-align:center; color:#2B6CB0; font-weight:800;'>{row['green']:.1f}%</td><td style='padding:4px; text-align:right; font-weight:600;'>{row['leitura']}</td></tr>" for row in res['dist_table']])}
+                                </table>
+                            </div>
                         </div>
+
                         <div class='metric-grid'>
                             <div><small>J CASA</small><b>{res['j_casa']}</b></div>
                             <div><small>J FORA</small><b>{res['j_fora']}</b></div>
                             <div><small>λ TOTAL</small><b>{res['lambda_total']:.2f}</b></div>
-                            <div><small>GE REAL</small><b class='blue'>{res['ge_real']:.2f}</b></div>
                             <div><small>RISCO 0x0</small><b class='red'>{res['p0x0']:.1f}%</b></div>
-                            <div style='background:rgba(43,108,176,.1); border-radius:4px; padding:2px;'><small style='color:#2B6CB0;'>CONS. PREF.</small><b style='color:#2B6CB0;'>{res['p_green']:.1f}%</b></div>
-                            <div><small>CONS. PROT.</small><b>{res['p_push']:.1f}%</b></div>
                             <div><small>2+ EMP. MÍN.</small><b>{res['emp2']:.1f}%</b></div>
                             <div><small>3+ EMP. MÍN.</small><b>{res['emp3']:.1f}%</b></div>
                             <div><small>ÚLTIMOS 5</small><b>{res['ultimos5']:.2f}</b></div>
