@@ -166,12 +166,13 @@ st.markdown("""
     .summary-box {
         background: #F0F9FF;
         border-left: 5px solid #0F5FA8;
-        padding: 20px;
+        padding: 25px;
         border-radius: 12px;
-        margin-bottom: 30px;
+        margin-bottom: 40px; /* Margem maior para empurrar os cards */
         position: relative;
-        z-index: 1;
-        overflow: visible;
+        display: block;
+        width: 100%;
+        clear: both;
     }
     
     /* File Uploader Custom */
