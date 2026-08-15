@@ -857,6 +857,18 @@ if all_data:
 
                         obs = f"<b>{veto_text}</b><br><span style='font-size:10px; opacity:0.8;'>{veto_detalhe}</span><br>REGRA OPERACIONAL: {regra_op}"
 
+                        # Sugestão de Linha para o .txt (Baseado no GE Real)
+                        if is_veto_sniper:
+                            linha_sugerida = "NÃO APOSTAR"
+                        elif ge_real >= 2.4:
+                            linha_sugerida = "OVER 2,00"
+                        elif ge_real >= 1.85:
+                            linha_sugerida = "OVER 1,50"
+                        elif ge_real >= 1.5:
+                            linha_sugerida = "OVER 1,00"
+                        else:
+                            linha_sugerida = "OVER 0,50"
+
                         # Identificação de Rankings de Elite para Alertas
                         # A aba Equipes V3 não possui as colunas legadas 'Liga', 'GM', 'GS' e 'Jogos'.
                         # Ela usa 'País - Liga', 'TGM', 'TGS' e 'TJT'.
