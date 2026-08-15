@@ -1054,18 +1054,16 @@ if all_data:
             for idx, res in enumerate(st.session_state.block_results, start=1):
                 resumo_html += f"<b>{idx}. {res['confronto']}</b>: {res['obs']}<br>"
             
-            # Layout nativo e limpo para evitar sobreposição
-            st.info(f"**Leitura Operacional**: Os confrontos selecionados foram avaliados individualmente. A probabilidade média de **GREEN Consenso (Over 1.5)** varia de {min_green:.1f}% a {max_green:.1f}%.")
+            # Layout nativo do Streamlit para garantir que NADA seja cortado
+            st.markdown("### 📋 Leitura Operacional")
+            st.info(f"Os confrontos selecionados foram avaliados individualmente. A probabilidade média de **GREEN Consenso (Over 1.5)** varia de **{min_green:.1f}%** a **{max_green:.1f}%**.")
             
-            st.markdown(f"""
-                <div style='background:#EBF8FF; border-left:5px solid #0D6B82; padding:20px; border-radius:12px; margin-bottom:40px; font-size:13px; color:#1A202C; display:block; width:100%;'>
-                    {resumo_html}
-                    <div style='margin-top:15px; padding-top:10px; border-top:1px solid #CBD5E0; font-style:italic; font-size:11px; color:#718096;'>
-                        Regra operacional: A linha sugerida busca o equilíbrio entre probabilidade de acerto e proteção do capital. Considere a entrada se a odd de mercado for superior à odd justa calculada pelo modelo.
-                    </div>
-                </div>
-            """, unsafe_allow_html=True)
-            st.markdown("<div style='margin-bottom:30px;'></div>", unsafe_allow_html=True)
+            # Usar expander ou container nativo para o resumo detalhado
+            with st.container(border=True):
+                st.markdown(resumo_html, unsafe_allow_html=True)
+                st.caption("Regra operacional: A linha sugerida busca o equilíbrio entre probabilidade de acerto e proteção do capital. Considere a entrada se a odd de mercado for superior à odd justa calculada pelo modelo.")
+            
+            st.divider()
 
             cards = []
             for idx, res in enumerate(st.session_state.block_results, start=1):
