@@ -163,6 +163,16 @@ st.markdown("""
         margin-bottom: 30px;
         box-shadow: 0 4px 6px -1px rgba(49, 130, 206, 0.05);
     }
+    .summary-box {
+        background: #F0F9FF;
+        border-left: 5px solid #0F5FA8;
+        padding: 20px;
+        border-radius: 12px;
+        margin-bottom: 30px;
+        position: relative;
+        z-index: 1;
+        overflow: visible;
+    }
     
     /* File Uploader Custom */
     [data-testid="stFileUploader"] { padding: 0; margin: 0; }
@@ -258,8 +268,12 @@ def get_flag_img(pais_liga):
 
 def get_team_stats(team_name, df_dados, df_equipes):
     t_clean = str(team_name).strip().lower()
-    all_matches = df_dados[(df_dados['Mandante'].astype(str).str.strip().str.lower() == t_clean) | 
-                           (df_dados['Visitante'].astype(str).str.strip().str.lower() == t_clean)].sort_values(by='Data', ascending=False)
+    # Busca robusta em Dados
+    mask_m = df_dados['Mandante'].astype(str).str.strip().str.lower() == t_clean
+    mask_v = df_dados['Visitante'].astype(str).str.strip().str.lower() == t_clean
+    all_matches = df_dados[mask_m | mask_v].sort_values(by='Data', ascending=False)
+    
+    # Busca robusta em Equipes
     team_row = df_equipes[df_equipes['Equipe'].astype(str).str.strip().str.lower() == t_clean]
     pts_m, pts_v, zero_zero = 0, 0, 0
     gmc, gsc, gmv, gsv = 0, 0, 0, 0
@@ -783,15 +797,25 @@ if all_data:
                         m_name_clean = str(conf['mandante']).strip().lower()
                         v_name_clean = str(conf['visitante']).strip().lower()
                         
-                        m_casa = df_dados[df_dados['Mandante'].astype(str).str.strip().str.lower() == m_name_clean].sort_values('Data', ascending=False).head(12)
-                        v_fora = df_dados[df_dados['Visitante'].astype(str).str.strip().str.lower() == v_name_clean].sort_values('Data', ascending=False).head(12)
+                        # Filtro Robusto para Prova Real (Mandante em Casa e Visitante Fora)
+                        mask_m_casa = df_dados['Mandante'].astype(str).str.strip().str.lower() == m_name_clean
+                        mask_v_fora = df_dados['Visitante'].astype(str).str.strip().str.lower() == v_name_clean
                         
-                        zero_m = len(m_casa[(m_casa['GM_M'] == 0) & (m_casa['GM_V'] == 0)]) / len(m_casa) if len(m_casa) else 1
-                        zero_v = len(v_fora[(v_fora['GM_M'] == 0) & (v_fora['GM_V'] == 0)]) / len(v_fora) if len(v_fora) else 1
+                        m_casa = df_dados[mask_m_casa].sort_values('Data', ascending=False).head(12)
+                        v_fora = df_dados[mask_v_fora].sort_values('Data', ascending=False).head(12)
+                        
+                        # Cálculo de 0x0 Histórico (Fiel à Prova Real)
+                        # O 0x0 na Prova Real é o percentual de jogos onde a soma de gols foi 0.
+                        zero_m = (m_casa['GM_M'].astype(float) + m_casa['GM_V'].astype(float) == 0).mean() if not m_casa.empty else 1.0
+                        zero_v = (v_fora['GM_M'].astype(float) + v_fora['GM_V'].astype(float) == 0).mean() if not v_fora.empty else 1.0
+                        
                         p0x0_real = (poisson.pmf(0, l_m) * poisson.pmf(0, l_v)) * 100
                         p0x0_stress = p0x0_real * avg_id
-                        is_veto = p0x0_stress > 10 or (zero_m + zero_v) / 2 > 0.08
-                        confirmado = bool(ge_real > 1.8 and not is_veto and len(m_casa) > 0 and len(v_fora) > 0)
+                        
+                        # Média de 0x0 Histórico para o Veto Sniper (Limite de 8%)
+                        avg_zero_hist = (zero_m + zero_v) / 2 * 100
+                        is_veto = p0x0_stress > 10 or avg_zero_hist > 8
+                        confirmado = bool(ge_real > 1.8 and not is_veto and not m_casa.empty and not v_fora.empty)
                         
                         # Métricas empíricas da condição específica: casa para o mandante e fora para o visitante.
                         def empirical_summary(frame):
@@ -824,7 +848,8 @@ if all_data:
                         def get_emp_metrics():
                             comb_o15 = (home_emp['over15'] + away_emp['over15']) / 2
                             comb_o25 = (home_emp['over25'] + away_emp['over25']) / 2
-                            comb_zero = 100 - ((m_casa['GM_M'] + m_casa['GM_V'] == 0).mean() * 100 + (v_fora['GM_M'] + v_fora['GM_V'] == 0).mean() * 100) / 2
+                            # Over 0.5 Real é 100% menos a média de 0x0
+                            comb_zero = 100 - avg_zero_hist
                             return {0.5: comb_zero, 1.0: comb_o15, 1.5: comb_o15, 2.0: comb_o25, 2.5: comb_o25}
                         probs_emp = get_emp_metrics()
                         
@@ -862,7 +887,7 @@ if all_data:
                             })
 
                         # Veto Sniper e Regra Operacional
-                        is_veto_sniper = p0x0_stress > 10 or (zero_m + zero_v) / 2 > 0.08
+                        is_veto_sniper = is_veto
                         veto_text = "⚠️ ALERTA DE VETO (0x0)" if is_veto_sniper else "✅ SEM VETO POR 0x0"
                         regra_op = "🚀 ENTRADA CONFIRMADA EM OVER" if ge_real > 1.8 and not is_veto_sniper else "🛡️ RECOMENDADO CAUTELA / UNDER"
                         
@@ -889,8 +914,10 @@ if all_data:
                         ultimos5 = (m_last5_avg + v_last5_avg) / 2
 
                         # Sugestão de Linha para o .txt (Baseado no GE Real)
-                        if is_veto_sniper:
+                        if is_veto_sniper and ge_real > 0:
                             linha_sugerida = "NÃO APOSTAR"
+                        elif ge_real <= 0:
+                            linha_sugerida = "ERRO: DADOS"
                         elif ge_real >= 2.4:
                             linha_sugerida = "OVER 2,00"
                         elif ge_real >= 1.85:
