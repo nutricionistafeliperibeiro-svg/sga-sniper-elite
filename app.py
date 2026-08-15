@@ -839,14 +839,19 @@ if all_data:
                             return "ABAIXO"
                         
                         dist_table = []
-                        fronteira_ln = "N/A"
+                        limite_green = "N/A"
+                        inicio_prot = "N/A"
+                        
                         for ln in [0.5, 1.0, 1.5, 2.0, 2.5]:
                             g_cons = (probs_poi[ln] + probs_emp[ln]) / 2
                             p_cons = get_protection_cons(ln)
                             leitura_ln = get_leitura_planilha(g_cons, p_cons)
                             
+                            # Identificar marcos da fronteira
                             if g_cons >= 75:
-                                fronteira_ln = f"OVER {ln:.2f}".replace('.', ',')
+                                limite_green = f"OVER {ln:.2f}".replace('.', ',')
+                            elif p_cons >= 75 and inicio_prot == "N/A":
+                                inicio_prot = f"OVER {ln:.2f}".replace('.', ',')
                                 
                             dist_table.append({
                                 'linha': f"OVER {ln:.2f}".replace('.', ','),
@@ -955,7 +960,8 @@ if all_data:
                             'pais': m.get('pais', 'N/A'),
                             'liga': m.get('liga', 'N/A'),
                             'alertas': alertas,
-                            'fronteira': fronteira_ln,
+                            'limite_green': limite_green,
+                            'inicio_prot': inicio_prot,
                             'p_green': (probs_poi[1.5] + probs_emp[1.5]) / 2 # Chave para o sumário operacional
                         })
                     
@@ -1063,7 +1069,8 @@ if all_data:
                             <div><small>2+ EMP. MÍN.</small><b>{res['emp2']:.1f}%</b></div>
                             <div><small>3+ EMP. MÍN.</small><b>{res['emp3']:.1f}%</b></div>
                             <div><small>ÚLTIMOS 5</small><b>{res['ultimos5']:.2f}</b></div>
-                            <div style='background:rgba(56,161,105,0.1); border-radius:4px; padding:2px;'><small style='color:#2F855A;'>FRONTEIRA</small><b style='color:#2F855A;'>{res['fronteira']}</b></div>
+                            <div style='background:rgba(56,161,105,0.1); border-radius:4px; padding:2px;'><small style='color:#2F855A;'>LIMITE GREEN</small><b style='color:#2F855A;'>{res['limite_green']}</b></div>
+                            <div style='background:rgba(49,130,206,0.1); border-radius:4px; padding:2px;'><small style='color:#2B6CB0;'>INÍCIO PROT.</small><b style='color:#2B6CB0;'>{res['inicio_prot']}</b></div>
                         </div>
                     </article>
                 """)
