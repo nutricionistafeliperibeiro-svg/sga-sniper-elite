@@ -692,28 +692,7 @@ if all_data:
                         st.session_state.block_notice = "❌ Nenhum bloco salvo."
                         st.rerun()
             with p_col3:
-                if st.button("⚡ Restaurar 15 Jogos", use_container_width=True, help="Restaurar o bloco da imagem"):
-                    matches_15 = [
-                        {'mandante': 'Ponte Preta', 'visitante': 'Náutico'},
-                        {'mandante': 'São Bernardo', 'visitante': 'Botafogo SP'},
-                        {'mandante': 'Sport Recife', 'visitante': 'Londrina'},
-                        {'mandante': 'Vancouver FC', 'visitante': 'Pacific FC'},
-                        {'mandante': 'Universidad de Concepción', 'visitante': 'Deportes La Serena'},
-                        {'mandante': 'Independiente del Valle', 'visitante': 'Delfín SC'},
-                        {'mandante': 'Apia L Tigers', 'visitante': 'SD Raiders'},
-                        {'mandante': 'Manly United', 'visitante': 'NWS Spirit'},
-                        {'mandante': 'Sydney Olympic', 'visitante': 'Sydney United'},
-                        {'mandante': 'Heidelberg United', 'visitante': 'Hume City'},
-                        {'mandante': 'Melbourne City U21', 'visitante': 'South Melbourne'},
-                        {'mandante': 'Armadale', 'visitante': 'Dianella White Eagle'},
-                        {'mandante': 'Olympic Kingsway', 'visitante': 'Sorrento FC'},
-                        {'mandante': 'Western Knights', 'visitante': 'Balcatta'},
-                        {'mandante': 'Perth Azzurri', 'visitante': 'Perth RedStar'}
-                    ]
-                    st.session_state.block_matches = matches_15
-                    st.session_state.block_results = []
-                    st.session_state.block_notice = "✅ Bloco de 15 partidas restaurado com sucesso!"
-                    st.rerun()
+                st.empty()
 
         norm_search_bloco = normalize_text(search_bloco)
         clubes_bloco = [c for c in clubes_bloco_raw if norm_search_bloco in normalize_text(c)]
