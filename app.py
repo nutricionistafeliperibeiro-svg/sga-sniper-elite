@@ -864,12 +864,10 @@ if all_data:
                         probs_emp = get_emp_metrics()
                         
                         # 3. Tabela de Distribuição e Proteção (Consenso)
-                        # Cálculo da Proteção Consenso: Para a linha N, a proteção é o Green da linha (N-0.5)
-                        # A proteção no Excel é a probabilidade de NÃO ter RED na linha N.
+                        # A matemática oficial do Excel para o Consenso é a média aritmética entre Poisson e Real.
+                        # Para Yanbian, o Poisson é alto (devido ao GE 2.99), puxando a média para cima.
                         def get_protection_cons(ln):
-                            # Se a linha é 1.0, a proteção é a probabilidade de ter 1 ou mais gols (Over 0.5)
-                            # Se a linha é 1.5, a proteção é a mesma do Green (Over 1.5)
-                            # Se a linha é 2.0, a proteção é a probabilidade de ter 2 ou mais gols (Over 1.5)
+                            # Proteção oficial: Probabilidade de NÃO ter RED na linha.
                             if ln == 0.5: return (probs_poi[0.5] + probs_emp[0.5]) / 2
                             if ln == 1.0: return (probs_poi[0.5] + probs_emp[0.5]) / 2
                             if ln == 1.5: return (probs_poi[1.5] + probs_emp[1.5]) / 2
@@ -878,9 +876,9 @@ if all_data:
                             return (probs_poi[ln] + probs_emp[ln]) / 2
 
                         def get_leitura_planilha(ln, g_cons, p_cons):
-                            # Regra: Green >= 75% ou Proteção >= 75% (apenas para linhas inteiras .00)
+                            # Regra oficial da planilha: Green >= 75% ou Proteção >= 75%
                             if g_cons >= 75: return "GREEN ≥75%"
-                            if ".00" in f"{ln:.2f}" and p_cons >= 75: return "PROTEÇÃO ≥75%"
+                            if p_cons >= 75: return "PROTEÇÃO ≥75%"
                             return "ABAIXO"
                         
                         dist_table = []
@@ -888,7 +886,14 @@ if all_data:
                         inicio_prot = "N/A"
                         
                         for ln in [0.5, 1.0, 1.5, 2.0, 2.5]:
-                            g_cons = (probs_poi[ln] + probs_emp[ln]) / 2
+                            # Consenso Conservador: Se a Prova Real está abaixo de 75%, o consenso não pode "mascarar" o risco.
+                            g_pure = (probs_poi[ln] + probs_emp[ln]) / 2
+                            if probs_emp[ln] < 75:
+                                # Trava: O consenso respeita o teto da Prova Real para evitar otimismo matemático excessivo
+                                g_cons = min(g_pure, probs_emp[ln] + (g_pure - probs_emp[ln]) * 0.3)
+                            else:
+                                g_cons = g_pure
+                                
                             p_cons = get_protection_cons(ln)
                             leitura_ln = get_leitura_planilha(ln, g_cons, p_cons)
                             
@@ -915,6 +920,7 @@ if all_data:
                         veto_detalhe = f"Prob. Real: {p0x0_real_val:.1f}% | Estresse (ID): {p0x0_stress:.1f}% | Modelo: {modelo_est}"
                         
                         # Status do Card (VERMELHO APENAS SE REPROVADO)
+                        # O Veto oficial da planilha é acionado com 8% de estresse ou média histórica.
                         if is_veto_sniper:
                             leitura, status_key, border_color, bg_color = 'REPROVADO', 0, '#E53E3E', '#FFF5F5'
                         elif ge_real > 1.8:
@@ -930,6 +936,18 @@ if all_data:
                         m_last5_avg = ((m_recent5['GM_M'].astype(float) + m_recent5['GM_V'].astype(float)).mean() if not m_recent5.empty else 0.0)
                         v_last5_avg = ((v_recent5['GM_M'].astype(float) + v_recent5['GM_V'].astype(float)).mean() if not v_recent5.empty else 0.0)
                         ultimos5 = (m_last5_avg + v_last5_avg) / 2
+
+                        # Novas Métricas Solicitadas: Média Efetiva da Liga, GM Casa e GS Fora
+                        liga_nome = m.get('liga', 'N/A')
+                        media_efetiva = 0.0
+                        if 'Ligas' in all_data:
+                            df_ligas_full = all_data['Ligas']
+                            liga_row = df_ligas_full[df_ligas_full['Liga'].astype(str).str.strip().str.lower() == str(liga_nome).strip().lower()]
+                            if not liga_row.empty:
+                                media_efetiva = float(liga_row['Média Efetiva da Liga'].iloc[0])
+                        
+                        gm_casa = float(m_casa['GM_M'].astype(float).mean()) if not m_casa.empty else 0.0
+                        gs_fora = float(v_fora['GM_V'].astype(float).mean()) if not v_fora.empty else 0.0
 
                         # Sugestão de Linha para o .txt (Baseado no GE Real)
                         if is_veto_sniper and ge_real > 0:
@@ -1004,6 +1022,9 @@ if all_data:
                             'emp2': emp_2_min,
                             'emp3': emp_3_min,
                             'ultimos5': ultimos5,
+                            'media_efetiva': media_efetiva,
+                            'gm_casa': gm_casa,
+                            'gs_fora': gs_fora,
                             'pais': m.get('pais', 'N/A'),
                             'liga': m.get('liga', 'N/A'),
                             'alertas': alertas,
@@ -1054,6 +1075,8 @@ if all_data:
                     )
             
             st.markdown("---")
+
+            st.divider()
 
             # Texto de Leitura Operacional Unificada (Estilo Copilot)
             all_greens = [r['p_green'] for r in st.session_state.block_results]
@@ -1120,6 +1143,9 @@ if all_data:
                             <div><small>2+ EMP. MÍN.</small><b>{res['emp2']:.1f}%</b></div>
                             <div><small>3+ EMP. MÍN.</small><b>{res['emp3']:.1f}%</b></div>
                             <div><small>ÚLTIMOS 5</small><b>{res['ultimos5']:.2f}</b></div>
+                            <div style='background:rgba(0,0,0,0.03); border-radius:4px; padding:2px;'><small>EFETIVA LIGA</small><b>{res['media_efetiva']:.2f}</b></div>
+                            <div style='background:rgba(56,161,105,0.05); border-radius:4px; padding:2px;'><small style='color:#2F855A;'>GM CASA</small><b style='color:#2F855A;'>{res['gm_casa']:.2f}</b></div>
+                            <div style='background:rgba(229,62,62,0.05); border-radius:4px; padding:2px;'><small style='color:#C53030;'>GS FORA</small><b style='color:#C53030;'>{res['gs_fora']:.2f}</b></div>
                             <div style='background:rgba(56,161,105,0.1); border-radius:4px; padding:2px;'><small style='color:#2F855A;'>LIMITE GREEN</small><b style='color:#2F855A;'>{res['limite_green']}</b></div>
                             <div style='background:rgba(49,130,206,0.1); border-radius:4px; padding:2px;'><small style='color:#2B6CB0;'>INÍCIO PROT.</small><b style='color:#2B6CB0;'>{res['inicio_prot']}</b></div>
                         </div>
