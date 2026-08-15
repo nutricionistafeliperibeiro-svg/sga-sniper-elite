@@ -257,8 +257,10 @@ def get_flag_img(pais_liga):
     return f'<img src="https://flagcdn.com/w40/{code}.png" style="width:18px; height:auto; margin-right:8px; vertical-align:middle; border-radius:2px; box-shadow:0 1px 2px rgba(0,0,0,0.1);">'
 
 def get_team_stats(team_name, df_dados, df_equipes):
-    all_matches = df_dados[(df_dados['Mandante'] == team_name) | (df_dados['Visitante'] == team_name)].sort_values(by='Data', ascending=False)
-    team_row = df_equipes[df_equipes['Equipe'] == team_name]
+    t_clean = str(team_name).strip().lower()
+    all_matches = df_dados[(df_dados['Mandante'].astype(str).str.strip().str.lower() == t_clean) | 
+                           (df_dados['Visitante'].astype(str).str.strip().str.lower() == t_clean)].sort_values(by='Data', ascending=False)
+    team_row = df_equipes[df_equipes['Equipe'].astype(str).str.strip().str.lower() == t_clean]
     pts_m, pts_v, zero_zero = 0, 0, 0
     gmc, gsc, gmv, gsv = 0, 0, 0, 0
     form = []
