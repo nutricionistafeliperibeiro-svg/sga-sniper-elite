@@ -859,13 +859,16 @@ if all_data:
 
                         conv_status = "ALTA" if abs(probs_poi[1.5] - probs_emp[1.5]) < 15 else "MODERADA"
                         analise_suporte = f"Convergência {conv_status}. Matemática indica volume de {ge_real:.2f} gols, enquanto a Prova Real sustenta {probs_emp[1.5]:.1f}% de Over 1.5."
-                        if is_veto_sniper:
-                            analise_suporte += " ⚠️ ALERTA: Risco de 0x0 detectado, priorizar linha protegida."
                         
-                        # Classificação
-                        if prob_pref >= 75 and not is_veto_sniper:
+                        # Classificação e Ajuste de Veto
+                        if is_veto_sniper:
+                            leitura, status_key, border_color, bg_color = 'VETO CRÍTICO', 0, '#718096', '#F7FAFC'
+                            linha_pref = "NÃO APOSTAR"
+                            linha_prot = "NÃO APOSTAR"
+                            analise_suporte = f"⚠️ VETO: Risco de 0x0 elevado ({p0x0_stress:.1f}%). Entrada condenada por fragilidade técnica impeditiva."
+                        elif prob_pref >= 75:
                             leitura, status_key, border_color, bg_color = 'FORTE', 3, '#0F5FA8', '#EBF8FF'
-                        elif prob_pref >= 65 and not is_veto_sniper:
+                        elif prob_pref >= 65:
                             leitura, status_key, border_color, bg_color = 'BOA', 2, '#4299E1', '#F7FCFF'
                         else:
                             leitura, status_key, border_color, bg_color = 'CAUTELA', 1, '#E53E3E', '#FFF5F5'
