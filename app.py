@@ -661,52 +661,48 @@ if all_data:
         st.markdown('''<div class="sim-header"><h3 style="margin:0; color:#2C5282;">🚀 Análise — Montagem em Bloco</h3><p style="margin:0; color:#4A5568; font-size:0.9rem;">Selecione vários confrontos e classifique os melhores para análise de gols e linhas asiáticas.</p></div>''', unsafe_allow_html=True)
         clubes_bloco_raw = sorted(df_equipes['Equipe'].dropna().astype(str).unique().tolist())
         
-        # Filtro de busca por texto para o bloco
-        c1, c2, c3 = st.columns([2, 1, 1])
-        with c1:
-            search_bloco = st.text_input("🔍 Filtrar Equipes para o Bloco", key="search_bloco_input", placeholder="Ex: Brage ou Orebro", label_visibility="collapsed")
-        with c2:
-            # Botão de Upload Discreto (Excel) na aba Análise
-            new_file_analise = st.file_uploader("EXCEL", type=["xlsx"], label_visibility="collapsed", key="excel_uploader_analise")
+        # Barra de Ferramentas Reestruturada
+        t_col1, t_col2, t_col3, t_col4 = st.columns([2.5, 1.2, 0.8, 0.8])
+        with t_col1:
+            # Filtro inteligente integrado: agora mais discreto e com instrução clara
+            search_bloco = st.text_input("Filtrar equipes...", key="search_bloco_input", placeholder="🔍 Digite aqui para filtrar (ex: Gremio)", label_visibility="collapsed")
+        with t_col2:
+            new_file_analise = st.file_uploader("XLSX", type=["xlsx"], label_visibility="collapsed", key="excel_uploader_analise")
             if new_file_analise:
                 st.session_state.uploaded_file = new_file_analise
                 st.rerun()
-        with c3:
-            # Botões de Persistência e Restauração
-            p_col1, p_col2, p_col3 = st.columns([1, 1, 2])
-            with p_col1:
-                if st.button("💾 Salvar", use_container_width=True, help="Salvar lista atual"):
-                    with open(st.session_state.block_matches_file, 'w') as f:
-                        json.dump(st.session_state.block_matches, f)
-                    st.session_state.block_notice = "✅ Bloco salvo com sucesso!"
+        with t_col3:
+            if st.button("💾 Salvar", use_container_width=True):
+                with open(st.session_state.block_matches_file, 'w') as f:
+                    json.dump(st.session_state.block_matches, f)
+                st.session_state.block_notice = "✅ Salvo!"
+                st.rerun()
+        with t_col4:
+            if st.button("📂 Abrir", use_container_width=True):
+                if os.path.exists(st.session_state.block_matches_file):
+                    with open(st.session_state.block_matches_file, 'r') as f:
+                        st.session_state.block_matches = json.load(f)
+                    st.session_state.block_results = []
+                    st.session_state.block_notice = "✅ Carregado!"
                     st.rerun()
-            with p_col2:
-                if st.button("📂 Abrir", use_container_width=True, help="Carregar última lista"):
-                    if os.path.exists(st.session_state.block_matches_file):
-                        with open(st.session_state.block_matches_file, 'r') as f:
-                            st.session_state.block_matches = json.load(f)
-                        st.session_state.block_results = []
-                        st.session_state.block_notice = "✅ Bloco carregado com sucesso!"
-                        st.rerun()
-                    else:
-                        st.session_state.block_notice = "❌ Nenhum bloco salvo."
-                        st.rerun()
-            with p_col3:
-                st.empty()
+                else:
+                    st.session_state.block_notice = "❌ Vazio"
+                    st.rerun()
 
+        # Lógica de Busca Robusta (Insensível a acentos)
         norm_search_bloco = normalize_text(search_bloco)
         clubes_bloco = [c for c in clubes_bloco_raw if norm_search_bloco in normalize_text(c)]
 
         if st.session_state.block_notice:
-            st.info(st.session_state.block_notice)
+            st.toast(st.session_state.block_notice)
             st.session_state.block_notice = ''
 
         with st.form('form_adicionar_confronto', clear_on_submit=True):
-            b_col1, b_col2, b_col3 = st.columns([2, 0.5, 2])
+            b_col1, b_col2, b_col3 = st.columns([2, 0.4, 2])
             with b_col1:
                 bloco_mandante = st.selectbox('Mandante', ['Selecione...'] + clubes_bloco, key='bloco_mandante')
             with b_col2:
-                st.markdown('<div style="font-size:1.35rem; font-weight:800; color:#CBD5E0; height:80px; display:flex; align-items:center; justify-content:center;">VS</div>', unsafe_allow_html=True)
+                st.markdown('<div style="font-size:1.2rem; font-weight:800; color:#CBD5E0; height:70px; display:flex; align-items:center; justify-content:center;">VS</div>', unsafe_allow_html=True)
             with b_col3:
                 bloco_visitante = st.selectbox('Visitante', ['Selecione...'] + clubes_bloco, key='bloco_visitante')
             adicionar_bloco = st.form_submit_button('＋ Adicionar confronto ao bloco', use_container_width=True)
