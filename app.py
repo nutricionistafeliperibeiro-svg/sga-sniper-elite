@@ -857,6 +857,13 @@ if all_data:
 
                         obs = f"<b>{veto_text}</b><br><span style='font-size:10px; opacity:0.8;'>{veto_detalhe}</span><br>REGRA OPERACIONAL: {regra_op}"
 
+                        # Média dos Últimos 5 Jogos (Fiel à Prova Real)
+                        m_recent5 = df_dados[(df_dados['Mandante'] == conf['mandante']) | (df_dados['Visitante'] == conf['mandante'])].sort_values('Data', ascending=False).head(5)
+                        v_recent5 = df_dados[(df_dados['Mandante'] == conf['visitante']) | (df_dados['Visitante'] == conf['visitante'])].sort_values('Data', ascending=False).head(5)
+                        m_last5_avg = ((m_recent5['GM_M'].astype(float) + m_recent5['GM_V'].astype(float)).mean() if not m_recent5.empty else 0.0)
+                        v_last5_avg = ((v_recent5['GM_M'].astype(float) + v_recent5['GM_V'].astype(float)).mean() if not v_recent5.empty else 0.0)
+                        ultimos5 = (m_last5_avg + v_last5_avg) / 2
+
                         # Sugestão de Linha para o .txt (Baseado no GE Real)
                         if is_veto_sniper:
                             linha_sugerida = "NÃO APOSTAR"
