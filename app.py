@@ -1257,7 +1257,7 @@ if all_data:
                 
                 b3.metric('Devolvidas', devolvidas_b)
                 b4.metric('Meio-Red', meio_red_b)
-                b5.metric('Erros', reds_b)
+                b5.metric('Red', reds_b)
                 b6.metric('P/L Total', f'R$ {pnl_b:,.2f}'.replace(',', 'X').replace('.', ',').replace('X', '.'))
                 st.markdown('---')
 
