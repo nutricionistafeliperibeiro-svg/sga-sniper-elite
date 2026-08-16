@@ -529,8 +529,8 @@ if all_data:
                     else:
                         df_filtered = pd.DataFrame()
                     
-                    df_filtered['IM'] = (df_filtered['TGM'] / df_filtered['TJT'].replace(0,1)) * (df_filtered['TGS'] / df_filtered['TJT'].replace(0,1))
-                    top_data = df_filtered.sort_values(by='IM', ascending=False).head(16)
+                    df_filtered['IVC'] = (df_filtered['TGM'] / df_filtered['TJT'].replace(0,1)) * (df_filtered['TGS'] / df_filtered['TJT'].replace(0,1))
+                    top_data = df_filtered.sort_values(by='IVC', ascending=False).head(16)
                 elif st.session_state.home_view == 'Ataque':
                     st.markdown('<div class="box-title">🔥 Top 15 Clubes Marcadores (Ataque de Elite)</div>', unsafe_allow_html=True)
                     top_data = df_elite_home.sort_values(by='TGM', ascending=False).head(16)
@@ -569,7 +569,7 @@ if all_data:
                                     </div>
                                     <div style="display:flex; flex-direction:column; align-items:flex-end; gap:5px;">
                                         <div>{form_html}</div>
-                                        <div style="font-size:0.7rem; font-weight:800; color:#3182CE; background:#EBF8FF; padding:2px 6px; border-radius:4px;">VOL: {int(team['TGM'])}</div>
+                                        <div style="font-size:0.7rem; font-weight:800; color:#3182CE; background:#EBF8FF; padding:2px 6px; border-radius:4px;">IVC: {team.get('IVC', 0):.2f}</div>
                                     </div>
                                 </div><div style="display:flex; flex-direction:column; gap:6px; font-size:0.8rem; border-top:1px solid #EDF2F7; padding-top:10px; margin-bottom:10px;">
                                     <div style="display:flex; justify-content:space-between; align-items:center;">
@@ -606,8 +606,9 @@ if all_data:
                                     <p><b>3. Volume Mínimo:</b> Exige-se um total de pelo menos 25 gols marcados na janela de 12 jogos.</p>
                                 </div>
                                 <div>
-                                    <p><b>4. Normalização de Outliers:</b> Resultados de 6+ gols são "podados" para 90% da média da equipe (se isolados) para evitar inflação artificial.</p>
-                                    <p><b>5. Soberania do Padrão:</b> Se a goleada (6+) ocorre em 2 ou mais jogos, ela é aceita como realidade técnica da equipe.</p>
+                                    <p><b>4. IVC (Índice de Volume Cruzado):</b> Mede o volume total (Gols Marcados × Gols Sofridos). Reflete o cruzamento entre ataque e fragilidade defensiva.</p>
+                                    <p><b>5. Normalização de Outliers:</b> Resultados de 6+ gols são "podados" para 90% da média da equipe (se isolados) para evitar inflação artificial.</p>
+                                    <p><b>6. Soberania do Padrão:</b> Se a goleada (6+) ocorre em 2 ou mais jogos, ela é aceita como realidade técnica da equipe.</p>
                                 </div>
                             </div>
                         </div>
