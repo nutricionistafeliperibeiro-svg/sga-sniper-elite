@@ -282,10 +282,9 @@ def get_flag_img(pais_liga):
     return f'<img src="https://flagcdn.com/w40/{code}.png" style="width:18px; height:auto; margin-right:8px; vertical-align:middle; border-radius:2px; box-shadow:0 1px 2px rgba(0,0,0,0.1);">'
 
 def get_rating(ivc):
-    if ivc >= 3.25: return "SUPER MÁQUINA (S)", "#1E3A8A", "#E0F2FE"
-    if ivc >= 2.40: return "MÁQUINA (A)", "#166534", "#DCFCE7"
-    if ivc >= 1.83: return "MODERADO (B)", "#92400E", "#FEF3C7"
-    return "FORA DO RADAR (C)", "#991B1B", "#FEE2E2"
+    if ivc >= 2.40: return "Classe A — Faixa Ouro", "#856404", "#FFF3CD"
+    if ivc >= 1.83: return "Classe B — Faixa Prata", "#383D41", "#E2E3E5"
+    return "Classe C — Faixa de Risco", "#721C24", "#F8D7DA"
 
 def get_team_stats(team_name, df_dados, df_equipes):
     t_clean = str(team_name).strip().lower()
@@ -626,7 +625,7 @@ if all_data:
                                 </div>
                                 <div>
                                     <p><b>4. IVC (Índice de Volume Cruzado):</b> Mede o volume total (Marcados × Sofridos). Reflete o cruzamento entre ataque e fragilidade.</p>
-                                    <p><b>5. Rating Soberano:</b> Classificação automática baseada no IVC: <b>(S)</b> ≥ 3.25 | <b>(A)</b> ≥ 2.40 | <b>(B)</b> ≥ 1.83 | <b>(C)</b> < 1.83.</p>
+                                    <p><b>5. Rating Soberano:</b> <b>(A) Faixa Ouro</b> (IVC ≥ 2.40) | <b>(B) Faixa Prata</b> (IVC ≥ 1.83) | <b>(C) Faixa de Risco</b> (IVC < 1.83).</p>
                                     <p><b>6. Outliers:</b> Resultados de 6+ gols são "podados" para 90% da média da equipe (se isolados) para evitar inflação artificial.</p>
                                 </div>
                             </div>
