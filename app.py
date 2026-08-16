@@ -1166,8 +1166,6 @@ if all_data:
                             <div><small>3+ EMP. MÍN.</small><b>{res['emp3']:.1f}%</b></div>
                             <div><small>ÚLTIMOS 5</small><b>{res['ultimos5']:.2f}</b></div>
                             <div style='background:rgba(0,0,0,0.03); border-radius:4px; padding:2px;'><small>EFETIVA LIGA</small><b>{res['media_efetiva']:.2f}</b></div>
-                            <div style='background:rgba(0,0,0,0.03); border-radius:4px; padding:2px;'><small>EFET. M (LIGA)</small><b>{res['media_efetiva_m']:.2f}</b></div>
-                            <div style='background:rgba(0,0,0,0.03); border-radius:4px; padding:2px;'><small>EFET. V (LIGA)</small><b>{res['media_efetiva_v']:.2f}</b></div>
                             <div style='background:rgba(56,161,105,0.05); border-radius:4px; padding:2px;'><small style='color:#2F855A;'>GM CASA</small><b style='color:#2F855A;'>{res['gm_casa']:.2f}</b></div>
                             <div style='background:rgba(229,62,62,0.05); border-radius:4px; padding:2px;'><small style='color:#C53030;'>GS FORA</small><b style='color:#C53030;'>{res['gs_fora']:.2f}</b></div>
                             <div style='background:rgba(56,161,105,0.1); border-radius:4px; padding:2px;'><small style='color:#2F855A;'>LIMITE GREEN</small><b style='color:#2F855A;'>{res['limite_green']}</b></div>
@@ -1185,7 +1183,7 @@ if all_data:
                     .match { display:flex; flex-direction:column; gap:3px; font-size:15px; }
                     .match span { color:#718096; font-size:10px; }
                     .line { text-align:right; font-size:13px; font-weight:800; text-transform:uppercase; white-space:nowrap; }
-                    .metric-grid { display:grid; grid-template-columns:repeat(13, minmax(55px,1fr)); gap:5px; border-top:1px solid rgba(113,128,150,.1); padding-top:10px; }
+                    .metric-grid { display:grid; grid-template-columns:repeat(11, minmax(62px,1fr)); gap:7px; border-top:1px solid rgba(113,128,150,.1); padding-top:10px; }
                     .metric-grid div { display:flex; flex-direction:column; gap:3px; min-width:0; }
                     .metric-grid small { color:#718096; font-size:8px; font-weight:700; white-space:nowrap; }
                     .metric-grid b { color:#2D3748; font-size:12px; font-variant-numeric:tabular-nums; }
