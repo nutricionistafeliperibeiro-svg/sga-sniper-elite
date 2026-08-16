@@ -951,14 +951,20 @@ if all_data:
                         v_last5_avg = ((v_recent5['GM_M'].astype(float) + v_recent5['GM_V'].astype(float)).mean() if not v_recent5.empty else 0.0)
                         ultimos5 = (m_last5_avg + v_last5_avg) / 2
 
-                        # Novas Métricas Solicitadas: Média Efetiva da Liga, GM Casa e GS Fora
+                        # Novas Métricas Solicitadas: Média Efetiva da Liga (Total, Mandante, Visitante), GM Casa e GS Fora
                         liga_nome = m.get('liga', 'N/A')
                         media_efetiva = 0.0
+                        media_efetiva_m = 0.0
+                        media_efetiva_v = 0.0
                         if 'Ligas' in all_data:
                             df_ligas_full = all_data['Ligas']
                             liga_row = df_ligas_full[df_ligas_full['Liga'].astype(str).str.strip().str.lower() == str(liga_nome).strip().lower()]
                             if not liga_row.empty:
                                 media_efetiva = float(liga_row['Média Efetiva da Liga'].iloc[0])
+                                if 'Média Efetiva dos Mandantes na Liga' in liga_row.columns:
+                                    media_efetiva_m = float(liga_row['Média Efetiva dos Mandantes na Liga'].iloc[0])
+                                if 'Média Efetiva dos Visitantes na Liga' in liga_row.columns:
+                                    media_efetiva_v = float(liga_row['Média Efetiva dos Visitantes na Liga'].iloc[0])
                         
                         gm_casa = float(m_casa['GM_M'].astype(float).mean()) if not m_casa.empty else 0.0
                         gs_fora = float(v_fora['GM_V'].astype(float).mean()) if not v_fora.empty else 0.0
@@ -1037,6 +1043,8 @@ if all_data:
                             'emp3': emp_3_min,
                             'ultimos5': ultimos5,
                             'media_efetiva': media_efetiva,
+                            'media_efetiva_m': media_efetiva_m,
+                            'media_efetiva_v': media_efetiva_v,
                             'gm_casa': gm_casa,
                             'gs_fora': gs_fora,
                             'pais': m.get('pais', 'N/A'),
@@ -1158,6 +1166,8 @@ if all_data:
                             <div><small>3+ EMP. MÍN.</small><b>{res['emp3']:.1f}%</b></div>
                             <div><small>ÚLTIMOS 5</small><b>{res['ultimos5']:.2f}</b></div>
                             <div style='background:rgba(0,0,0,0.03); border-radius:4px; padding:2px;'><small>EFETIVA LIGA</small><b>{res['media_efetiva']:.2f}</b></div>
+                            <div style='background:rgba(0,0,0,0.03); border-radius:4px; padding:2px;'><small>EFET. M (LIGA)</small><b>{res['media_efetiva_m']:.2f}</b></div>
+                            <div style='background:rgba(0,0,0,0.03); border-radius:4px; padding:2px;'><small>EFET. V (LIGA)</small><b>{res['media_efetiva_v']:.2f}</b></div>
                             <div style='background:rgba(56,161,105,0.05); border-radius:4px; padding:2px;'><small style='color:#2F855A;'>GM CASA</small><b style='color:#2F855A;'>{res['gm_casa']:.2f}</b></div>
                             <div style='background:rgba(229,62,62,0.05); border-radius:4px; padding:2px;'><small style='color:#C53030;'>GS FORA</small><b style='color:#C53030;'>{res['gs_fora']:.2f}</b></div>
                             <div style='background:rgba(56,161,105,0.1); border-radius:4px; padding:2px;'><small style='color:#2F855A;'>LIMITE GREEN</small><b style='color:#2F855A;'>{res['limite_green']}</b></div>
@@ -1175,7 +1185,7 @@ if all_data:
                     .match { display:flex; flex-direction:column; gap:3px; font-size:15px; }
                     .match span { color:#718096; font-size:10px; }
                     .line { text-align:right; font-size:13px; font-weight:800; text-transform:uppercase; white-space:nowrap; }
-                    .metric-grid { display:grid; grid-template-columns:repeat(11, minmax(62px,1fr)); gap:7px; border-top:1px solid rgba(113,128,150,.1); padding-top:10px; }
+                    .metric-grid { display:grid; grid-template-columns:repeat(13, minmax(55px,1fr)); gap:5px; border-top:1px solid rgba(113,128,150,.1); padding-top:10px; }
                     .metric-grid div { display:flex; flex-direction:column; gap:3px; min-width:0; }
                     .metric-grid small { color:#718096; font-size:8px; font-weight:700; white-space:nowrap; }
                     .metric-grid b { color:#2D3748; font-size:12px; font-variant-numeric:tabular-nums; }
