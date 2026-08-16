@@ -382,8 +382,8 @@ if all_data:
             st.session_state.selected_clube = ""
             st.rerun()
     with m_cols[2]:
-        if st.button("⚔️ Confronto", use_container_width=True):
-            st.session_state.menu = 'Confronto'
+        if st.button("⚔️ Modelo 01", use_container_width=True):
+            st.session_state.menu = 'Modelo 01'
             st.rerun()
     with m_cols[3]:
         if st.button("🚀 Análise", use_container_width=True):
@@ -541,8 +541,8 @@ if all_data:
                                     </a>
                                 """, unsafe_allow_html=True)
 
-    elif st.session_state.menu == 'Confronto':
-        st.markdown(f"""<div class="sim-header"><h3 style="margin:0; color:#2C5282;">⚔️ Simulador de Confronto & Prova Real</h3><p style="margin:0; color:#4A5568; font-size:0.9rem;">Diagnóstico Robusto: Cruzamento Técnico (Confronto) + Validação Empírica (Prova Real)</p></div>""", unsafe_allow_html=True)
+    elif st.session_state.menu == 'Modelo 01':
+        st.markdown(f"""<div class="sim-header"><h3 style="margin:0; color:#2C5282;">⚔️ Simulador de Modelo 01 & Prova Real</h3><p style="margin:0; color:#4A5568; font-size:0.9rem;">Diagnóstico Robusto: Cruzamento Técnico (Modelo 01) + Validação Empírica (Prova Real)</p></div>""", unsafe_allow_html=True)
         clubes_list_raw = sorted(df_equipes['Equipe'].unique().tolist())
         
         # Filtro de busca por texto para facilitar a seleção
@@ -1353,7 +1353,7 @@ if all_data:
         track_sheet = next((name for name in ('BackTest', 'Backtest') if name in all_data), None)
         if track_sheet:
             # Carregar todas as 25 colunas e remover linhas sem confronto
-            track_df = pd.read_excel(EXCEL_PATH, sheet_name=track_sheet, header=1).dropna(subset=['Confronto'])
+            track_df = pd.read_excel(EXCEL_PATH, sheet_name=track_sheet, header=1).dropna(subset=['Modelo 01'])
             
             if not track_df.empty:
                 # Métricas de Resumo
@@ -1400,7 +1400,7 @@ if all_data:
                     try:
                         dt = row.get('Data', '')
                         dt_str = dt.strftime('%d/%m/%Y') if hasattr(dt, 'strftime') else str(dt)[:10]
-                        conf = row.get('Confronto', 'N/A')
+                        conf = row.get('Modelo 01', 'N/A')
                         liga = row.get('Liga', 'N/A')
                         placar = row.get('Placar', 'N/A')
                         odd = row.get('Odd', 0)
@@ -1494,30 +1494,78 @@ if all_data:
             st.info('A aba Backtest não foi encontrada no arquivo Excel.')
 
     elif st.session_state.menu == 'Ranking':
-        st.markdown('<div class="sim-header"><h3 style="margin:0; color:#2C5282;">📊 Ranking Geral — Aderência às Linhas Over</h3><p style="margin:0; color:#4A5568; font-size:0.9rem;">Classificação técnica das equipes baseada em índices de potencial e aderência estatística</p></div>', unsafe_allow_html=True)
+        st.markdown('<div class="sim-header"><h3 style="margin:0; color:#2C5282;">📊 Radar Over — Equipes de Alta Confiança</h3><p style="margin:0; color:#4A5568; font-size:0.9rem;">Monitoramento dinâmico de frequência de gols, produção própria e confirmação (Linhas A a K, Linhas 4 a 66)</p></div>', unsafe_allow_html=True)
         
-        # Verificar se a aba Ranking existe
         xls = pd.ExcelFile(uploaded_file if uploaded_file else EXCEL_PATH)
-        if 'Ranking' in xls.sheet_names:
-            # Carregar a aba Ranking com skiprows=3
-            df_ranking = pd.read_excel(uploaded_file if uploaded_file else EXCEL_PATH, sheet_name='Ranking', skiprows=3)
-            df_ranking = df_ranking.dropna(subset=['Equipe'])
+        if 'Radar Over' in xls.sheet_names:
+            df_raw_radar = pd.read_excel(uploaded_file if uploaded_file else EXCEL_PATH, sheet_name='Radar Over', header=None, skiprows=3, nrows=65, usecols='A:K')
             
-            if not df_ranking.empty:
-                # Filtro de Busca e Liga no Ranking
-                r_col1, r_col2 = st.columns([2, 1])
+            # Processar seções dinamicamente
+            current_sec = "Geral"
+            header_found = False
+            radar_rows = []
+            
+            for _, r in df_raw_radar.iterrows():
+                vals = [x for x in r.values if pd.notna(x)]
+                if not vals:
+                    continue
+                txt = str(vals[0]).strip().upper()
+                if "OVER 3" in txt:
+                    current_sec = "Over 3 (Alto Teto)"
+                    header_found = False
+                    continue
+                elif "OVER 2" in txt:
+                    current_sec = "Over 2 (Perfil Ofensivo)"
+                    header_found = False
+                    continue
+                elif "OVER 1" in txt:
+                    current_sec = "Over 1 (Segurança)"
+                    header_found = False
+                    continue
+                
+                if not header_found and ("EQUIPE" in str(vals[0]).upper() or "FAIXA" in str(vals[0]).upper()):
+                    header_found = True
+                    continue
+                
+                if header_found and current_sec != "Geral":
+                    if "EXCLUSÕES" in txt or "COMO USAR" in txt:
+                        current_sec = "Geral"
+                        header_found = False
+                        continue
+                    
+                    radar_rows.append({
+                        'Categoria': current_sec,
+                        'Equipe': r.values[0],
+                        'Liga': r.values[1],
+                        'Jogos': r.values[2],
+                        'Media_Propria': r.values[3],
+                        'Media_Partida': r.values[4],
+                        'Col_F': r.values[5],
+                        'Col_G': r.values[6],
+                        'Col_H': r.values[7],
+                        'Col_I': r.values[8],
+                        'Col_J': r.values[9],
+                        'Nivel': r.values[10]
+                    })
+            
+            df_radar = pd.DataFrame(radar_rows)
+            if not df_radar.empty:
+                r_col1, r_col2, r_col3 = st.columns([2, 1, 1])
                 with r_col1:
-                    search_rank = st.text_input("Filtrar Equipe no Ranking...", placeholder="🔍 Digite o nome da equipe...")
+                    search_rank = st.text_input("Filtrar Equipe no Radar...", placeholder="🔍 Digite o nome da equipe...")
                 with r_col2:
-                    liga_rank = st.selectbox("Filtrar por Liga", ["Todas as Ligas"] + sorted(df_ranking['País - Liga'].dropna().unique().tolist()))
+                    cat_filter = st.selectbox("Filtrar Faixa", ["Todas as Faixas"] + sorted(df_radar['Categoria'].unique().tolist()))
+                with r_col3:
+                    liga_rank = st.selectbox("Filtrar por Liga", ["Todas as Ligas"] + sorted(df_radar['Liga'].dropna().unique().tolist()))
                 
                 if search_rank:
                     norm_s = normalize_text(search_rank)
-                    df_ranking = df_ranking[df_ranking['Equipe'].apply(lambda x: norm_s in normalize_text(x))]
+                    df_radar = df_radar[df_radar['Equipe'].apply(lambda x: norm_s in normalize_text(str(x)))]
+                if cat_filter != "Todas as Faixas":
+                    df_radar = df_radar[df_radar['Categoria'] == cat_filter]
                 if liga_rank != "Todas as Ligas":
-                    df_ranking = df_ranking[df_ranking['País - Liga'] == liga_rank]
+                    df_radar = df_radar[df_radar['Liga'] == liga_rank]
 
-                # Estilo de Tabela Premium para o Ranking
                 ranking_html = """
                 <style>
                     .rank-table { width:100%; border-collapse:collapse; font-family:Inter,Arial,sans-serif; background:white; border-radius:12px; overflow:hidden; box-shadow:0 4px 6px rgba(0,0,0,0.05); }
@@ -1534,56 +1582,50 @@ if all_data:
                 <table class="rank-table">
                     <thead>
                         <tr>
-                            <th>Pos</th>
+                            <th>Faixa</th>
                             <th>Equipe</th>
                             <th>Liga</th>
-                            <th>TJT</th>
-                            <th>Índice</th>
-                            <th>Potencial</th>
-                            <th>O1.5</th>
-                            <th>O2.5</th>
-                            <th>BTTS</th>
-                            <th>Decisão</th>
+                            <th>Jogos</th>
+                            <th>Média Própria</th>
+                            <th>Média Partida</th>
+                            <th>Nível</th>
                         </tr>
                     </thead>
                     <tbody>
                 """
                 
-                for _, row in df_ranking.iterrows():
-                    dec_class = "dec-sel" if str(row.get('Decisão', '')).upper() == 'SELECIONADA' else "dec-out"
+                for _, row in df_radar.iterrows():
                     try:
-                        pos = int(row['Posição'])
-                        tjt = int(row['TJT'])
-                        idx_g = float(row['Índice Geral'])
-                        pot = float(row['Potencial Ajustado'])
-                        o15 = float(row['Over 1.5']) * 100
-                        o25 = float(row['Over 2.5']) * 100
-                        btts = float(row['BTTS']) * 100
-                        dec = str(row['Decisão'])
-                        flag_img = get_flag_img(row['País - Liga'])
+                        eq = str(row['Equipe'])
+                        lg = str(row['Liga'])
+                        jg = int(row['Jogos'])
+                        mp = float(row['Media_Propria'])
+                        mpt = float(row['Media_Partida'])
+                        cat = str(row['Categoria'])
+                        nv = str(row['Nivel'])
+                        flag_img = get_flag_img(lg)
+                        
+                        nv_color = "#38A169" if nv.upper() == 'ELITE' else "#3182CE"
                         
                         ranking_html += f"""
                             <tr>
-                                <td><span class="pos-badge">{pos}º</span></td>
-                                <td style="font-weight:700; display:flex; align-items:center;">{flag_img}{row['Equipe']}</td>
-                                <td style="color:#718096; font-size:10px;">{row['País - Liga']}</td>
-                                <td>{tjt}</td>
-                                <td class="index-val">{idx_g:.2f}</td>
-                                <td>{pot:.2f}</td>
-                                <td class="over-val">{o15:.0f}%</td>
-                                <td>{o25:.0f}%</td>
-                                <td>{btts:.0f}%</td>
-                                <td><span class="decisao-badge {dec_class}">{dec}</span></td>
+                                <td><span class="pos-badge">{cat}</span></td>
+                                <td style="font-weight:700; display:flex; align-items:center;">{flag_img}{eq}</td>
+                                <td style="color:#718096; font-size:10px;">{lg}</td>
+                                <td>{jg}</td>
+                                <td class="index-val">{mp:.2f}</td>
+                                <td class="over-val">{mpt:.2f}</td>
+                                <td><span style="color:white; background:{nv_color}; padding:2px 6px; border-radius:4px; font-weight:bold; font-size:10px;">{nv}</span></td>
                             </tr>
                         """
                     except:
                         continue
                 
                 ranking_html += "</tbody></table>"
-                components.html(ranking_html, height=min(1500, 50 * len(df_ranking) + 100), scrolling=True)
+                components.html(ranking_html, height=min(1500, 50 * len(df_radar) + 100), scrolling=True)
             else:
-                st.info('Nenhum dado encontrado na aba Ranking.')
+                st.info('Nenhum dado encontrado na aba Radar Over.')
         else:
-            st.info('A aba Ranking não foi encontrada no arquivo Excel.')
+            st.info('A aba Radar Over não foi encontrada no arquivo Excel.')
 else:
     st.error("Erro ao carregar banco de dados.")
