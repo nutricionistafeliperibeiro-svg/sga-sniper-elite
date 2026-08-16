@@ -484,42 +484,53 @@ if all_data:
                 df_elite_home = df_equipes[~df_equipes['Equipe'].isin(equipes_mls)].copy()
 
                 if st.session_state.home_view == 'Over':
-                    st.markdown('<div class="box-title">⚡ Máquinas de Gols (Consistência 8/12 | GM Casa/Fora ≥ 1.8 | GS ≥ 1.5 | Min. 25 Gols Marcados & 25 Sofridos)</div>', unsafe_allow_html=True)
-                    # Calcular médias
-                    df_elite_home['Avg_GM'] = df_elite_home['TGM'] / df_elite_home['TJT'].replace(0, 1)
-                    df_elite_home['Avg_GS'] = df_elite_home['TGS'] / df_elite_home['TJT'].replace(0, 1)
-                    df_elite_home['Avg_GM_C'] = df_elite_home['GMC'] / df_elite_home['TJM'].replace(0, 1)
-                    df_elite_home['Avg_GM_V'] = df_elite_home['GMV'] / df_elite_home['TJV'].replace(0, 1)
+                    st.markdown('<div class="box-title">⚡ Máquinas de Gols (Mandante: FA Casa ≥ 1.50 + 9/12 jogos com 2+ gols | Visitante: FA Fora ≥ 1.35)</div>', unsafe_allow_html=True)
                     
-                    # Filtro de Amostra Consolidada: Mínimo de 25 gols marcados E 25 sofridos
-                    df_filtered = df_elite_home[(df_elite_home['TGM'] >= 25) & (df_elite_home['TGS'] >= 25)]
-                    
-                    # Filtro Rígido de Médias: 1.8 em CASA E 1.8 FORA
-                    df_filtered = df_filtered[(df_filtered['Avg_GM_C'] >= 1.8) & (df_filtered['Avg_GM_V'] >= 1.8) & (df_filtered['Avg_GS'] >= 1.5)]
-                    
-                    # Filtro de Consistência 8/12 (Pelo menos 8 de 12 jogos com GM 2+ e GS 2+)
-                    def check_8_12(team_name):
-                        t_clean = str(team_name).strip().lower()
-                        m_h = df_dados[df_dados['Mandante'].astype(str).str.strip().str.lower() == t_clean]
-                        m_a = df_dados[df_dados['Visitante'].astype(str).str.strip().str.lower() == t_clean]
-                        matches = pd.concat([m_h, m_a]).sort_values(by='Data', ascending=False).head(12)
-                        if len(matches) < 12: return False
+                    # Obter média efetiva da liga para cada equipe na base
+                    def check_maquinas_new(row):
+                        t_name = str(row['Equipe']).strip().lower()
+                        liga_name = str(row['Liga']).strip().lower()
                         
-                        count_gm, count_gs = 0, 0
-                        for _, row in matches.iterrows():
-                            is_m = str(row['Mandante']).strip().lower() == t_clean
-                            gm = row['GM_M'] if is_m else row['GM_V']
-                            gs = row['GM_V'] if is_m else row['GM_M']
-                            if gm >= 2: count_gm += 1
-                            if gs >= 2: count_gs += 1
-                        return count_gm >= 8 and count_gs >= 8
+                        # Buscar média efetiva dos mandantes e visitantes na liga
+                        liga_row = df_ligas[df_ligas['Liga'].astype(str).str.strip().str.lower() == liga_name]
+                        if not liga_row.empty:
+                            media_casa_liga = float(liga_row['Média Efetiva dos Mandantes na Liga'].iloc[0]) if 'Média Efetiva dos Mandantes na Liga' in liga_row.columns and pd.notna(liga_row['Média Efetiva dos Mandantes na Liga'].iloc[0]) else 1.35
+                            media_fora_liga = float(liga_row['Média Efetiva dos Visitantes na Liga'].iloc[0]) if 'Média Efetiva dos Visitantes na Liga' in liga_row.columns and pd.notna(liga_row['Média Efetiva dos Visitantes na Liga'].iloc[0]) else 1.15
+                        else:
+                            media_casa_liga = 1.35
+                            media_fora_liga = 1.15
+                            
+                        tjm = row['TJM'] if 'TJM' in row and row['TJM'] > 0 else 1
+                        tjv = row['TJV'] if 'TJV' in row and row['TJV'] > 0 else 1
+                        gmc = row['GMC'] / tjm if 'GMC' in row else 0
+                        gmv = row['GMV'] / tjv if 'GMV' in row else 0
+                        
+                        fa_casa = gmc / media_casa_liga if media_casa_liga > 0 else 0
+                        fa_fora = gmv / media_fora_liga if media_fora_liga > 0 else 0
+                        
+                        # Critério 1: FA Casa >= 1.50 e FA Fora >= 1.35
+                        if fa_casa < 1.50 or fa_fora < 1.35:
+                            return False
+                            
+                        # Critério 2: Pelo menos 2 gols em no mínimo 9 das 12 partidas como mandante (75%)
+                        m_h = df_dados[df_dados['Mandante'].astype(str).str.strip().str.lower() == t_name].sort_values(by='Data', ascending=False).head(12)
+                        if len(m_h) < 12:
+                            return False
+                        
+                        count_home_2 = 0
+                        for _, h_row in m_h.iterrows():
+                            if h_row['GM_M'] >= 2:
+                                count_home_2 += 1
+                                
+                        return count_home_2 >= 9
 
-                    if not df_filtered.empty:
-                        df_filtered['Pass_8_12'] = df_filtered['Equipe'].apply(check_8_12)
-                        df_filtered = df_filtered[df_filtered['Pass_8_12'] == True]
+                    if not df_elite_home.empty:
+                        df_elite_home['Pass_New'] = df_elite_home.apply(check_maquinas_new, axis=1)
+                        df_filtered = df_elite_home[df_elite_home['Pass_New'] == True].copy()
+                    else:
+                        df_filtered = pd.DataFrame()
                     
-                    # Índice de Máquina: Produto das Médias (Avg_GM * Avg_GS)
-                    df_filtered['IM'] = df_filtered['Avg_GM'] * df_filtered['Avg_GS']
+                    df_filtered['IM'] = (df_filtered['TGM'] / df_filtered['TJT'].replace(0,1)) * (df_filtered['TGS'] / df_filtered['TJT'].replace(0,1))
                     top_data = df_filtered.sort_values(by='IM', ascending=False).head(15)
                 elif st.session_state.home_view == 'Ataque':
                     st.markdown('<div class="box-title">🔥 Top 15 Clubes Marcadores (Ataque de Elite)</div>', unsafe_allow_html=True)
@@ -967,7 +978,17 @@ if all_data:
                                     media_efetiva_v = float(liga_row['Média Efetiva dos Visitantes na Liga'].iloc[0])
                         
                         gm_casa = float(m_casa['GM_M'].astype(float).mean()) if not m_casa.empty else 0.0
-                        gs_fora = float(v_fora['GM_V'].astype(float).mean()) if not v_fora.empty else 0.0
+                        gc_casa = float(m_casa['GM_V'].astype(float).mean()) if not m_casa.empty else 0.0
+                        gp_fora = float(v_fora['GM_V'].astype(float).mean()) if not v_fora.empty else 0.0
+                        gc_fora = float(v_fora['GM_M'].astype(float).mean()) if not v_fora.empty else 0.0
+
+                        liga_casa = media_efetiva_m if media_efetiva_m > 0 else (media_efetiva if media_efetiva > 0 else 1.35)
+                        liga_fora = media_efetiva_v if media_efetiva_v > 0 else (media_efetiva if media_efetiva > 0 else 1.15)
+
+                        fa_casa = gm_casa / liga_casa if liga_casa > 0 else 0.0
+                        fa_fora = gp_fora / liga_fora if liga_fora > 0 else 0.0
+                        fd_casa = gc_casa / liga_fora if liga_fora > 0 else 0.0
+                        fd_fora = gc_fora / liga_casa if liga_casa > 0 else 0.0
 
                         # Sugestão de Linha para o .txt (Baseado no GE Real)
                         if is_veto_sniper and ge_real > 0:
@@ -1047,6 +1068,10 @@ if all_data:
                             'media_efetiva_v': media_efetiva_v,
                             'gm_casa': gm_casa,
                             'gs_fora': gs_fora,
+                            'fa_casa': fa_casa,
+                            'fa_fora': fa_fora,
+                            'fd_casa': fd_casa,
+                            'fd_fora': fd_fora,
                             'pais': m.get('pais', 'N/A'),
                             'liga': m.get('liga', 'N/A'),
                             'alertas': alertas,
@@ -1168,6 +1193,10 @@ if all_data:
                             <div style='background:rgba(0,0,0,0.03); border-radius:4px; padding:2px;'><small>EFETIVA LIGA</small><b>{res['media_efetiva']:.2f}</b></div>
                             <div style='background:rgba(56,161,105,0.05); border-radius:4px; padding:2px;'><small style='color:#2F855A;'>GM CASA</small><b style='color:#2F855A;'>{res['gm_casa']:.2f}</b></div>
                             <div style='background:rgba(229,62,62,0.05); border-radius:4px; padding:2px;'><small style='color:#C53030;'>GS FORA</small><b style='color:#C53030;'>{res['gs_fora']:.2f}</b></div>
+                            <div style='background:rgba(49,130,206,0.05); border-radius:4px; padding:2px;'><small style='color:#2B6CB0;'>FA CASA</small><b style='color:#2B6CB0;'>{res['fa_casa']:.2f}</b></div>
+                            <div style='background:rgba(49,130,206,0.05); border-radius:4px; padding:2px;'><small style='color:#2B6CB0;'>FA FORA</small><b style='color:#2B6CB0;'>{res['fa_fora']:.2f}</b></div>
+                            <div style='background:rgba(229,62,62,0.05); border-radius:4px; padding:2px;'><small style='color:#C53030;'>FD CASA</small><b style='color:#C53030;'>{res['fd_casa']:.2f}</b></div>
+                            <div style='background:rgba(229,62,62,0.05); border-radius:4px; padding:2px;'><small style='color:#C53030;'>FD FORA</small><b style='color:#C53030;'>{res['fd_fora']:.2f}</b></div>
                             <div style='background:rgba(56,161,105,0.1); border-radius:4px; padding:2px;'><small style='color:#2F855A;'>LIMITE GREEN</small><b style='color:#2F855A;'>{res['limite_green']}</b></div>
                             <div style='background:rgba(49,130,206,0.1); border-radius:4px; padding:2px;'><small style='color:#2B6CB0;'>INÍCIO PROT.</small><b style='color:#2B6CB0;'>{res['inicio_prot']}</b></div>
                         </div>
@@ -1183,7 +1212,7 @@ if all_data:
                     .match { display:flex; flex-direction:column; gap:3px; font-size:15px; }
                     .match span { color:#718096; font-size:10px; }
                     .line { text-align:right; font-size:13px; font-weight:800; text-transform:uppercase; white-space:nowrap; }
-                    .metric-grid { display:grid; grid-template-columns:repeat(11, minmax(62px,1fr)); gap:7px; border-top:1px solid rgba(113,128,150,.1); padding-top:10px; }
+                    .metric-grid { display:grid; grid-template-columns:repeat(15, minmax(48px,1fr)); gap:4px; border-top:1px solid rgba(113,128,150,.1); padding-top:10px; }
                     .metric-grid div { display:flex; flex-direction:column; gap:3px; min-width:0; }
                     .metric-grid small { color:#718096; font-size:8px; font-weight:700; white-space:nowrap; }
                     .metric-grid b { color:#2D3748; font-size:12px; font-variant-numeric:tabular-nums; }
