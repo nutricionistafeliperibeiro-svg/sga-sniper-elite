@@ -569,7 +569,7 @@ if all_data:
                                     </div>
                                     <div style="display:flex; flex-direction:column; align-items:flex-end; gap:5px;">
                                         <div>{form_html}</div>
-                                        <div style="font-size:0.7rem; font-weight:800; color:#3182CE; background:#EBF8FF; padding:2px 6px; border-radius:4px;">IM: {team.get('IM', 0):.2f}</div>
+                                        <div style="font-size:0.7rem; font-weight:800; color:#3182CE; background:#EBF8FF; padding:2px 6px; border-radius:4px;">VOL: {int(team['TGM'])}</div>
                                     </div>
                                 </div><div style="display:flex; flex-direction:column; gap:6px; font-size:0.8rem; border-top:1px solid #EDF2F7; padding-top:10px; margin-bottom:10px;">
                                     <div style="display:flex; justify-content:space-between; align-items:center;">
@@ -794,21 +794,6 @@ if all_data:
                     st.session_state.block_results = []
                     st.session_state.block_notice = f'{m_real} x {v_real} adicionado ao bloco.'
                     st.rerun()
-        if adicionar_bloco:
-            if bloco_mandante == 'Selecione...' or bloco_visitante == 'Selecione...':
-                st.session_state.block_notice = 'Selecione o mandante e o visitante antes de adicionar.'
-                st.rerun()
-            elif bloco_mandante == bloco_visitante:
-                st.session_state.block_notice = 'O mandante e o visitante precisam ser equipes diferentes.'
-                st.rerun()
-            elif any(x['mandante'] == bloco_mandante and x['visitante'] == bloco_visitante for x in st.session_state.block_matches):
-                st.session_state.block_notice = 'Este confronto já está no bloco.'
-                st.rerun()
-            else:
-                st.session_state.block_matches.append({'mandante': bloco_mandante, 'visitante': bloco_visitante})
-                st.session_state.block_results = []
-                st.session_state.block_notice = f'{bloco_mandante} x {bloco_visitante} adicionado ao bloco.'
-                st.rerun()
         st.markdown('<div class="box-title">📦 Confrontos selecionados</div>', unsafe_allow_html=True)
         
 
@@ -1016,17 +1001,17 @@ if all_data:
                                     media_efetiva_v = float(liga_row['Média Efetiva dos Visitantes na Liga'].iloc[0])
                         
                         gm_casa = float(m_casa['GM_M'].astype(float).mean()) if not m_casa.empty else 0.0
-                        gc_casa = float(m_casa['GM_V'].astype(float).mean()) if not m_casa.empty else 0.0
-                        gp_fora = float(v_fora['GM_V'].astype(float).mean()) if not v_fora.empty else 0.0
-                        gc_fora = float(v_fora['GM_M'].astype(float).mean()) if not v_fora.empty else 0.0
+                        gs_casa = float(m_casa['GM_V'].astype(float).mean()) if not m_casa.empty else 0.0
+                        gm_fora = float(v_fora['GM_V'].astype(float).mean()) if not v_fora.empty else 0.0
+                        gs_fora = float(v_fora['GM_M'].astype(float).mean()) if not v_fora.empty else 0.0
 
                         liga_casa = media_efetiva_m if media_efetiva_m > 0 else (media_efetiva if media_efetiva > 0 else 1.35)
                         liga_fora = media_efetiva_v if media_efetiva_v > 0 else (media_efetiva if media_efetiva > 0 else 1.15)
 
                         fa_casa = gm_casa / liga_casa if liga_casa > 0 else 0.0
-                        fa_fora = gp_fora / liga_fora if liga_fora > 0 else 0.0
-                        fd_casa = gc_casa / liga_fora if liga_fora > 0 else 0.0
-                        fd_fora = gc_fora / liga_casa if liga_casa > 0 else 0.0
+                        fa_fora = gm_fora / liga_fora if liga_fora > 0 else 0.0
+                        fd_casa = gs_casa / liga_fora if liga_fora > 0 else 0.0
+                        fd_fora = gs_fora / liga_casa if liga_casa > 0 else 0.0
 
                         # Sugestão de Linha para o .txt (Baseado no GE Real)
                         if is_veto_sniper and ge_real > 0:
