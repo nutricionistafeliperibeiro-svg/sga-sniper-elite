@@ -519,7 +519,7 @@ if all_data:
                         count_h_2 = (m_h['GM_M'] >= 2).sum()
                         count_v_1 = (m_v['GM_V'] >= 1).sum()
                         
-                        pass_filter = fa_casa >= 1.40 and fa_fora >= 1.30 and count_h_2 >= 4 and count_v_1 >= 4
+                        pass_filter = fa_casa >= 1.40 and fa_fora >= 1.30 and count_h_2 >= 4 and count_v_1 >= 4 and row['TGM'] >= 25
                         return pd.Series([pass_filter, fa_casa, fa_fora, count_h_2, count_v_1, media_geral])
 
                     if not df_elite_home.empty:
@@ -601,10 +601,11 @@ if all_data:
                                 <div>
                                     <p><b>1. Força de Ataque (FA):</b> Exige-se FA Casa ≥ 1.40 e FA Fora ≥ 1.30 em relação à média efetiva da liga.</p>
                                     <p><b>2. Frequência (4/6):</b> A equipe deve marcar 2+ gols em casa e 1+ gol fora em pelo menos 66% dos jogos.</p>
+                                    <p><b>3. Volume Mínimo:</b> Exige-se um total de pelo menos 25 gols marcados na janela de 12 jogos.</p>
                                 </div>
                                 <div>
-                                    <p><b>3. Normalização de Outliers:</b> Resultados de 6+ gols são "podados" para 90% da média da equipe (se isolados) para evitar inflação artificial.</p>
-                                    <p><b>4. Soberania do Padrão:</b> Se a goleada (6+) ocorre em 2 ou mais jogos, ela é aceita como realidade técnica da equipe.</p>
+                                    <p><b>4. Normalização de Outliers:</b> Resultados de 6+ gols são "podados" para 90% da média da equipe (se isolados) para evitar inflação artificial.</p>
+                                    <p><b>5. Soberania do Padrão:</b> Se a goleada (6+) ocorre em 2 ou mais jogos, ela é aceita como realidade técnica da equipe.</p>
                                 </div>
                             </div>
                         </div>
