@@ -382,7 +382,7 @@ if all_data:
             st.session_state.selected_clube = ""
             st.rerun()
     with m_cols[2]:
-        if st.button("⚔️ Modelo 01", use_container_width=True):
+        if st.button("⚔️ Confronto", use_container_width=True):
             st.session_state.menu = 'Modelo 01'
             st.rerun()
     with m_cols[3]:
@@ -542,7 +542,7 @@ if all_data:
                                 """, unsafe_allow_html=True)
 
     elif st.session_state.menu == 'Modelo 01':
-        st.markdown(f"""<div class="sim-header"><h3 style="margin:0; color:#2C5282;">⚔️ Simulador de Modelo 01 & Prova Real</h3><p style="margin:0; color:#4A5568; font-size:0.9rem;">Diagnóstico Robusto: Cruzamento Técnico (Modelo 01) + Validação Empírica (Prova Real)</p></div>""", unsafe_allow_html=True)
+        st.markdown(f"""<div class="sim-header"><h3 style="margin:0; color:#2C5282;">⚔️ Simulador de Confronto & Prova Real</h3><p style="margin:0; color:#4A5568; font-size:0.9rem;">Diagnóstico Robusto: Cruzamento Técnico (Confronto) + Validação Empírica (Prova Real)</p></div>""", unsafe_allow_html=True)
         clubes_list_raw = sorted(df_equipes['Equipe'].unique().tolist())
         
         # Filtro de busca por texto para facilitar a seleção
