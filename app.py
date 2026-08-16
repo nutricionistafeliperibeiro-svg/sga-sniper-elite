@@ -545,46 +545,53 @@ if all_data:
                         t_stats = get_team_stats(team['Equipe'], df_dados, df_equipes)
                         form_html = "".join([f'<span class="form-pill pill-{r.lower()}">{r}</span>' for r in t_stats['form']])
                         
-                        # Métrica de exibição (Usando as normalizadas se for Over)
-                        if st.session_state.home_view == 'Over':
-                            fa_c_disp = team['FA_C_S']
-                            fa_v_disp = team['FA_V_S']
-                            freq_h = int(team['Freq_H_S'])
-                            freq_v = int(team['Freq_V_S'])
-                            media_g = team['Media_G_S']
-                        else:
-                            fa_c_disp = team['FAM'] / 1.35 # Fallback aproximado
-                            fa_v_disp = team['FAV'] / 1.15
-                            freq_h, freq_v = 0, 0
-                            media_g = team['TGM'] / team['TJT'] if team['TJT'] > 0 else 0
+                        # Cálculo das médias para exibição clássica
+                        m_h_games = df_dados[df_dados['Mandante'] == team['Equipe']].head(6)
+                        m_v_games = df_dados[df_dados['Visitante'] == team['Equipe']].head(6)
+                        avg_gmc = t_stats['gmc'] / max(len(m_h_games), 1)
+                        avg_gsc = t_stats['gsc'] / max(len(m_h_games), 1)
+                        avg_gmv = t_stats['gmv'] / max(len(m_v_games), 1)
+                        avg_gsv = t_stats['gsv'] / max(len(m_v_games), 1)
+                        
+                        fa_c_disp = team['FA_C_S'] if st.session_state.home_view == 'Over' else (team['FAM'] / 1.35)
+                        fa_v_disp = team['FA_V_S'] if st.session_state.home_view == 'Over' else (team['FAV'] / 1.15)
+                        freq_h = int(team.get('Freq_H_S', 0))
+                        freq_v = int(team.get('Freq_V_S', 0))
 
                         st.markdown(f"""
-                            <a href="/?time={team['Equipe']}" target="_self" class="card-link" style="height: auto; min-height: 120px;">
-                                <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+                            <a href="/?time={team['Equipe']}" target="_self" class="card-link" style="height: auto; min-height: 140px;">
+                                <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:8px;">
                                     <div style="flex:1;">
                                         <div style="font-weight:800; font-size:1rem; color:#1A365D; margin-bottom:2px;">{idx+1}. {team['Equipe']}</div>
-                                        <div style="font-size:0.75rem; color:#718096; margin-bottom:10px;">{t_stats['pais']} - {t_stats['liga']} {get_flag_img(f"{t_stats['pais']} - {t_stats['liga']}")}</div>
+                                        <div style="font-size:0.7rem; color:#718096; display:flex; align-items:center; gap:5px;">
+                                            {get_flag_img(f"{t_stats['pais']} - {t_stats['liga']}")} {t_stats['pais']} - {t_stats['liga']}
+                                        </div>
                                     </div>
                                     <div style="display:flex; flex-direction:column; align-items:flex-end; gap:5px;">
                                         <div>{form_html}</div>
-                                        <div style="font-size:0.75rem; font-weight:700; color:#3182CE;">IM: {team.get('IM', 0):.2f}</div>
+                                        <div style="font-size:0.7rem; font-weight:800; color:#3182CE; background:#EBF8FF; padding:2px 6px; border-radius:4px;">IM: {team.get('IM', 0):.2f}</div>
                                     </div>
                                 </div>
-                                <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:10px; border-top:1px solid #EDF2F7; padding-top:10px;">
-                                    <div style="text-align:center;">
-                                        <div style="font-size:0.65rem; color:#718096; text-transform:uppercase; font-weight:700;">FA Casa</div>
-                                        <div style="font-size:1.1rem; font-weight:800; color:#38A169;">{fa_c_disp:.2f}</div>
-                                        <div style="font-size:0.6rem; color:#A0AEC0;">Freq: {freq_h}/6</div>
+                                
+                                <div style="display:flex; flex-direction:column; gap:6px; font-size:0.8rem; border-top:1px solid #EDF2F7; padding-top:10px; margin-bottom:10px;">
+                                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                                        <div><span style="color:#718096; font-weight:600;">Casa (Avg):</span> {format_avg_html(avg_gmc, "#38A169")} / {format_avg_html(avg_gsc, "#E53E3E")}</div>
+                                        <div style="font-weight:800; color:#38A169; background:#F0FFF4; padding:1px 6px; border-radius:4px; font-size:0.7rem;">{int(team['TGM'])}M</div>
                                     </div>
-                                    <div style="text-align:center; border-left:1px solid #EDF2F7; border-right:1px solid #EDF2F7;">
-                                        <div style="font-size:0.65rem; color:#718096; text-transform:uppercase; font-weight:700;">FA Fora</div>
-                                        <div style="font-size:1.1rem; font-weight:800; color:#3182CE;">{fa_v_disp:.2f}</div>
-                                        <div style="font-size:0.6rem; color:#A0AEC0;">Freq: {freq_v}/6</div>
+                                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                                        <div><span style="color:#718096; font-weight:600;">Fora (Avg):</span> {format_avg_html(avg_gmv, "#38A169")} / {format_avg_html(avg_gsv, "#E53E3E")}</div>
+                                        <div style="font-weight:800; color:#E53E3E; background:#FFF5F5; padding:1px 6px; border-radius:4px; font-size:0.7rem;">{int(team['TGS'])}S</div>
                                     </div>
+                                </div>
+
+                                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; background:#F8FAFC; padding:8px; border-radius:8px; border:1px solid #EDF2F7;">
                                     <div style="text-align:center;">
-                                        <div style="font-size:0.65rem; color:#718096; text-transform:uppercase; font-weight:700;">Média G</div>
-                                        <div style="font-size:1.1rem; font-weight:800; color:#2D3748;">{media_g:.2f}</div>
-                                        <div style="font-size:0.6rem; color:#A0AEC0;">Total Partidas</div>
+                                        <div style="font-size:0.6rem; color:#718096; text-transform:uppercase; font-weight:700;">FA Casa | Freq</div>
+                                        <div style="font-size:0.9rem; font-weight:800; color:#2D3748;">{fa_c_disp:.2f} <span style="color:#A0AEC0; font-size:0.7rem;">({freq_h}/6)</span></div>
+                                    </div>
+                                    <div style="text-align:center; border-left:1px solid #EDF2F7;">
+                                        <div style="font-size:0.6rem; color:#718096; text-transform:uppercase; font-weight:700;">FA Fora | Freq</div>
+                                        <div style="font-size:0.9rem; font-weight:800; color:#2D3748;">{fa_v_disp:.2f} <span style="color:#A0AEC0; font-size:0.7rem;">({freq_v}/6)</span></div>
                                     </div>
                                 </div>
                             </a>
