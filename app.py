@@ -484,7 +484,7 @@ if all_data:
                 df_elite_home = df_equipes[~df_equipes['Equipe'].isin(equipes_mls)].copy()
 
                 if st.session_state.home_view == 'Over':
-                    st.markdown('<div class="box-title">⚡ Máquinas de Gols (Elite: GM Casa/Fora ≥ 1.8 & GS ≥ 1.5)</div>', unsafe_allow_html=True)
+                    st.markdown('<div class="box-title">⚡ Máquinas de Gols (Consistência 9/12 | GM Casa/Fora ≥ 1.8)</div>', unsafe_allow_html=True)
                     # Calcular médias
                     df_elite_home['Avg_GM'] = df_elite_home['TGM'] / df_elite_home['TJT'].replace(0, 1)
                     df_elite_home['Avg_GS'] = df_elite_home['TGS'] / df_elite_home['TJT'].replace(0, 1)
@@ -496,6 +496,19 @@ if all_data:
                     
                     # Filtro Rígido de Médias: 1.8 em CASA E 1.8 FORA
                     df_filtered = df_filtered[(df_filtered['Avg_GM_C'] >= 1.8) & (df_filtered['Avg_GM_V'] >= 1.8) & (df_filtered['Avg_GS'] >= 1.5)]
+                    
+                    # Filtro de Consistência 9/12 (Pelo menos 9 dos últimos 12 jogos com 2+ gols)
+                    def check_9_12(team_name):
+                        t_clean = str(team_name).strip().lower()
+                        m_h = df_dados[df_dados['Mandante'].astype(str).str.strip().str.lower() == t_clean]
+                        m_a = df_dados[df_dados['Visitante'].astype(str).str.strip().str.lower() == t_clean]
+                        matches = pd.concat([m_h, m_a]).sort_values(by='Data', ascending=False).head(12)
+                        if len(matches) < 12: return False
+                        return (matches['GM_M'] + matches['GM_V'] >= 2).sum() >= 9
+
+                    if not df_filtered.empty:
+                        df_filtered['Pass_9_12'] = df_filtered['Equipe'].apply(check_9_12)
+                        df_filtered = df_filtered[df_filtered['Pass_9_12'] == True]
                     
                     # Índice de Máquina: Produto das Médias (Avg_GM * Avg_GS)
                     df_filtered['IM'] = df_filtered['Avg_GM'] * df_filtered['Avg_GS']
