@@ -493,9 +493,17 @@ if all_data:
                         
                         # Buscar média efetiva dos mandantes e visitantes na liga
                         liga_row = df_ligas[df_ligas['Liga'].astype(str).str.strip().str.lower() == liga_name]
+                        
+                        def safe_float(val, default):
+                            try:
+                                res = float(val)
+                                return res if not pd.isna(res) else default
+                            except:
+                                return default
+
                         if not liga_row.empty:
-                            media_casa_liga = float(liga_row['Média Efetiva dos Mandantes na Liga'].iloc[0]) if 'Média Efetiva dos Mandantes na Liga' in liga_row.columns and pd.notna(liga_row['Média Efetiva dos Mandantes na Liga'].iloc[0]) else 1.35
-                            media_fora_liga = float(liga_row['Média Efetiva dos Visitantes na Liga'].iloc[0]) if 'Média Efetiva dos Visitantes na Liga' in liga_row.columns and pd.notna(liga_row['Média Efetiva dos Visitantes na Liga'].iloc[0]) else 1.15
+                            media_casa_liga = safe_float(liga_row['Média Efetiva dos Mandantes na Liga'].iloc[0], 1.35)
+                            media_fora_liga = safe_float(liga_row['Média Efetiva dos Visitantes na Liga'].iloc[0], 1.15)
                         else:
                             media_casa_liga = 1.35
                             media_fora_liga = 1.15
