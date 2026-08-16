@@ -573,7 +573,11 @@ if all_data:
                                     </div>
                                     <div style="display:flex; flex-direction:column; align-items:flex-end; gap:5px;">
                                         <div>{form_html}</div>
-                                        <div style="font-size:0.7rem; font-weight:800; color:#3182CE; background:#EBF8FF; padding:2px 6px; border-radius:4px;">IVC: {ivc_geral:.2f} | Casa: {ivc_casa:.2f} | Fora: {ivc_fora:.2f}</div>
+                                        <div style="display:flex; gap:4px;">
+                                            <div style="font-size:0.65rem; font-weight:800; color:#3182CE; background:#EBF8FF; padding:2px 6px; border-radius:4px;">IVC: {ivc_geral:.2f}</div>
+                                            <div style="font-size:0.65rem; font-weight:800; color:#3182CE; background:#EBF8FF; padding:2px 6px; border-radius:4px;">CASA: {ivc_casa:.2f}</div>
+                                            <div style="font-size:0.65rem; font-weight:800; color:#3182CE; background:#EBF8FF; padding:2px 6px; border-radius:4px;">FORA: {ivc_fora:.2f}</div>
+                                        </div>
                                     </div>
                                 </div><div style="display:flex; flex-direction:column; gap:6px; font-size:0.8rem; border-top:1px solid #EDF2F7; padding-top:10px; margin-bottom:10px;">
                                     <div style="display:flex; justify-content:space-between; align-items:center;">
