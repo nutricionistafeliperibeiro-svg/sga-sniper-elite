@@ -571,9 +571,7 @@ if all_data:
                                         <div>{form_html}</div>
                                         <div style="font-size:0.7rem; font-weight:800; color:#3182CE; background:#EBF8FF; padding:2px 6px; border-radius:4px;">IM: {team.get('IM', 0):.2f}</div>
                                     </div>
-                                </div>
-                                
-                                <div style="display:flex; flex-direction:column; gap:6px; font-size:0.8rem; border-top:1px solid #EDF2F7; padding-top:10px; margin-bottom:10px;">
+                                </div><div style="display:flex; flex-direction:column; gap:6px; font-size:0.8rem; border-top:1px solid #EDF2F7; padding-top:10px; margin-bottom:10px;">
                                     <div style="display:flex; justify-content:space-between; align-items:center;">
                                         <div><span style="color:#718096; font-weight:600;">Casa (Avg):</span> {format_avg_html(avg_gmc, "#38A169")} / {format_avg_html(avg_gsc, "#E53E3E")}</div>
                                         <div style="font-weight:800; color:#38A169; background:#F0FFF4; padding:1px 6px; border-radius:4px; font-size:0.7rem;">{int(team['TGM'])}M</div>
@@ -581,10 +579,7 @@ if all_data:
                                     <div style="display:flex; justify-content:space-between; align-items:center;">
                                         <div><span style="color:#718096; font-weight:600;">Fora (Avg):</span> {format_avg_html(avg_gmv, "#38A169")} / {format_avg_html(avg_gsv, "#E53E3E")}</div>
                                         <div style="font-weight:800; color:#E53E3E; background:#FFF5F5; padding:1px 6px; border-radius:4px; font-size:0.7rem;">{int(team['TGS'])}S</div>
-                                    </div>
-                                </div>
-
-                                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; background:#F8FAFC; padding:8px; border-radius:8px; border:1px solid #EDF2F7;">
+                                    </div></div><div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; background:#F8FAFC; padding:8px; border-radius:8px; border:1px solid #EDF2F7;">
                                     <div style="text-align:center;">
                                         <div style="font-size:0.6rem; color:#718096; text-transform:uppercase; font-weight:700;">FA Casa | Freq</div>
                                         <div style="font-size:0.9rem; font-weight:800; color:#2D3748;">{fa_c_disp:.2f} <span style="color:#A0AEC0; font-size:0.7rem;">({freq_h}/6)</span></div>
