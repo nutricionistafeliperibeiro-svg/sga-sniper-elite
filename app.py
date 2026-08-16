@@ -281,6 +281,12 @@ def get_flag_img(pais_liga):
     code = iso_map.get(p, "un")
     return f'<img src="https://flagcdn.com/w40/{code}.png" style="width:18px; height:auto; margin-right:8px; vertical-align:middle; border-radius:2px; box-shadow:0 1px 2px rgba(0,0,0,0.1);">'
 
+def get_rating(ivc):
+    if ivc >= 3.25: return "SUPER MÁQUINA (S)", "#1E3A8A", "#E0F2FE"
+    if ivc >= 2.40: return "MÁQUINA (A)", "#166534", "#DCFCE7"
+    if ivc >= 1.83: return "MODERADO (B)", "#92400E", "#FEF3C7"
+    return "FORA DO RADAR (C)", "#991B1B", "#FEE2E2"
+
 def get_team_stats(team_name, df_dados, df_equipes):
     t_clean = str(team_name).strip().lower()
     # Busca robusta em Dados
@@ -561,14 +567,19 @@ if all_data:
                         ivc_geral = team.get('IVC', 0)
                         ivc_casa = avg_gmc * avg_gsc
                         ivc_fora = avg_gmv * avg_gsv
+                        
+                        rating_label, rating_color, rating_bg = get_rating(ivc_geral)
 
                         st.markdown(f"""
                             <a href="/?time={team['Equipe']}" target="_self" class="card-link" style="height: auto; min-height: 140px;">
                                 <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:8px;">
                                     <div style="flex:1;">
                                         <div style="font-weight:800; font-size:1rem; color:#1A365D; margin-bottom:2px;">{idx+1}. {team['Equipe']}</div>
-                                        <div style="font-size:0.7rem; color:#718096; display:flex; align-items:center; gap:5px;">
+                                        <div style="font-size:0.7rem; color:#718096; display:flex; align-items:center; gap:5px; margin-bottom:5px;">
                                             {get_flag_img(f"{t_stats['pais']} - {t_stats['liga']}")} {t_stats['pais']} - {t_stats['liga']}
+                                        </div>
+                                        <div style="font-size:0.65rem; font-weight:800; color:{rating_color}; background:{rating_bg}; padding:2px 8px; border-radius:12px; display:inline-block; border:1px solid {rating_color}40;">
+                                            ⭐ {rating_label}
                                         </div>
                                     </div>
                                     <div style="display:flex; flex-direction:column; align-items:flex-end; gap:5px;">
@@ -614,9 +625,9 @@ if all_data:
                                     <p><b>3. Volume Mínimo:</b> Exige-se um total de pelo menos 25 gols marcados na janela de 12 jogos.</p>
                                 </div>
                                 <div>
-                                    <p><b>4. IVC (Índice de Volume Cruzado):</b> Mede o volume total (Gols Marcados × Gols Sofridos). Reflete o cruzamento entre ataque e fragilidade defensiva.</p>
-                                    <p><b>5. Normalização de Outliers:</b> Resultados de 6+ gols são "podados" para 90% da média da equipe (se isolados) para evitar inflação artificial.</p>
-                                    <p><b>6. Soberania do Padrão:</b> Se a goleada (6+) ocorre em 2 ou mais jogos, ela é aceita como realidade técnica da equipe.</p>
+                                    <p><b>4. IVC (Índice de Volume Cruzado):</b> Mede o volume total (Marcados × Sofridos). Reflete o cruzamento entre ataque e fragilidade.</p>
+                                    <p><b>5. Rating Soberano:</b> Classificação automática baseada no IVC: <b>(S)</b> ≥ 3.25 | <b>(A)</b> ≥ 2.40 | <b>(B)</b> ≥ 1.83 | <b>(C)</b> < 1.83.</p>
+                                    <p><b>6. Outliers:</b> Resultados de 6+ gols são "podados" para 90% da média da equipe (se isolados) para evitar inflação artificial.</p>
                                 </div>
                             </div>
                         </div>
