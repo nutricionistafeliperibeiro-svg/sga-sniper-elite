@@ -348,7 +348,7 @@ def get_probable_scores(lambda_m, lambda_v):
     return sorted(scores, key=lambda x: x['prob'], reverse=True)[:8]
 
 if all_data:
-    df_dados, df_equipes = all_data['Dados'], all_data['Equipes']
+    df_dados, df_equipes, df_ligas = all_data['Dados'], all_data['Equipes'], all_data['Ligas']
 
     # --- HEADER PREMIUM ---
     st.markdown(f"""
@@ -489,7 +489,7 @@ if all_data:
                     # Obter média efetiva da liga para cada equipe na base
                     def check_maquinas_new(row):
                         t_name = str(row['Equipe']).strip().lower()
-                        liga_name = str(row['Liga']).strip().lower()
+                        liga_name = str(row['País - Liga']).strip().lower() if 'País - Liga' in row else ""
                         
                         # Buscar média efetiva dos mandantes e visitantes na liga
                         liga_row = df_ligas[df_ligas['Liga'].astype(str).str.strip().str.lower() == liga_name]
