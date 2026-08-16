@@ -484,7 +484,7 @@ if all_data:
                 df_elite_home = df_equipes[~df_equipes['Equipe'].isin(equipes_mls)].copy()
 
                 if st.session_state.home_view == 'Over':
-                    st.markdown('<div class="box-title">⚡ Máquinas de Gols (Consistência 8/12 | GM Casa/Fora ≥ 1.8 | GS ≥ 1.5)</div>', unsafe_allow_html=True)
+                    st.markdown('<div class="box-title">⚡ Máquinas de Gols (Consistência 8/12 | GM Casa/Fora ≥ 1.8 | GS ≥ 1.5 | Min. 25 Gols Marcados & 25 Sofridos)</div>', unsafe_allow_html=True)
                     # Calcular médias
                     df_elite_home['Avg_GM'] = df_elite_home['TGM'] / df_elite_home['TJT'].replace(0, 1)
                     df_elite_home['Avg_GS'] = df_elite_home['TGS'] / df_elite_home['TJT'].replace(0, 1)
