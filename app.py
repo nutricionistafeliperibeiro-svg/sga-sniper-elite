@@ -106,7 +106,6 @@ st.markdown("""
         margin-bottom: 15px; 
         transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); 
         box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-        height: 140px; /* Altura fixa para alinhamento perfeito */
     }
     .card-link:hover { 
         border-color: var(--accent-blue); 
@@ -484,14 +483,11 @@ if all_data:
                 df_elite_home = df_equipes[~df_equipes['Equipe'].isin(equipes_mls)].copy()
 
                 if st.session_state.home_view == 'Over':
-                    st.markdown('<div class="box-title">⚡ Máquinas de Gols (Mandante: FA Casa ≥ 1.50 + 9/12 jogos com 2+ gols | Visitante: FA Fora ≥ 1.35)</div>', unsafe_allow_html=True)
+                    st.markdown('<div class="box-title">⚡ Máquinas de Gols (Regularidade Extrema V7.1)</div>', unsafe_allow_html=True)
                     
-                    # Obter média efetiva da liga para cada equipe na base
-                    def check_maquinas_new(row):
+                    def check_maquinas_soberana(row):
                         t_name = str(row['Equipe']).strip().lower()
                         liga_name = str(row['País - Liga']).strip().lower() if 'País - Liga' in row else ""
-                        
-                        # Buscar média efetiva dos mandantes e visitantes na liga
                         liga_row = df_ligas[df_ligas['Liga'].astype(str).str.strip().str.lower() == liga_name]
                         
                         def safe_float(val, default):
@@ -501,87 +497,118 @@ if all_data:
                             except:
                                 return default
 
-                        if not liga_row.empty:
-                            media_casa_liga = safe_float(liga_row['Média Efetiva dos Mandantes na Liga'].iloc[0], 1.35)
-                            media_fora_liga = safe_float(liga_row['Média Efetiva dos Visitantes na Liga'].iloc[0], 1.15)
-                        else:
-                            media_casa_liga = 1.35
-                            media_fora_liga = 1.15
-                            
-                        tjm = row['TJM'] if 'TJM' in row and row['TJM'] > 0 else 1
-                        tjv = row['TJV'] if 'TJV' in row and row['TJV'] > 0 else 1
-                        gmc = row['GMC'] / tjm if 'GMC' in row else 0
-                        gmv = row['GMV'] / tjv if 'GMV' in row else 0
+                        m_casa_liga = safe_float(liga_row['Média Efetiva dos Mandantes na Liga'].iloc[0], 1.35) if not liga_row.empty else 1.35
+                        m_fora_liga = safe_float(liga_row['Média Efetiva dos Visitantes na Liga'].iloc[0], 1.15) if not liga_row.empty else 1.15
                         
-                        fa_casa = gmc / media_casa_liga if media_casa_liga > 0 else 0
-                        fa_fora = gmv / media_fora_liga if media_fora_liga > 0 else 0
+                        m_h = df_dados[df_dados['Mandante'].astype(str).str.strip().str.lower() == t_name].sort_values(by='Data', ascending=False).head(6)
+                        m_v = df_dados[df_dados['Visitante'].astype(str).str.strip().str.lower() == t_name].sort_values(by='Data', ascending=False).head(6)
                         
-                        # Critério 1: FA Casa >= 1.50 e FA Fora >= 1.35
-                        if fa_casa < 1.50 or fa_fora < 1.35:
-                            return False
-                            
-                        # Critério 2: Pelo menos 2 gols em no mínimo 9 das 12 partidas como mandante (75%)
-                        m_h = df_dados[df_dados['Mandante'].astype(str).str.strip().str.lower() == t_name].sort_values(by='Data', ascending=False).head(12)
-                        if len(m_h) < 12:
-                            return False
+                        if len(m_h) < 6 or len(m_v) < 6: return pd.Series([False, 0, 0, 0, 0, 0])
                         
-                        count_home_2 = 0
-                        for _, h_row in m_h.iterrows():
-                            if h_row['GM_M'] >= 2:
-                                count_home_2 += 1
-                                
-                        return count_home_2 >= 9
+                        media_geral = row['TGM'] / row['TJT'] if row['TJT'] > 0 else 0
+                        norm_val = media_geral * 0.9
+                        
+                        outs_h = (m_h['GM_M'] >= 6).sum()
+                        outs_v = (m_v['GM_V'] >= 6).sum()
+                        
+                        gmc_final = m_h['GM_M'].apply(lambda x: norm_val if (x >= 6 and outs_h == 1) else x).mean()
+                        gmv_final = m_v['GM_V'].apply(lambda x: norm_val if (x >= 6 and outs_v == 1) else x).mean()
+                        
+                        fa_casa = gmc_final / m_casa_liga
+                        fa_fora = gmv_final / m_fora_liga
+                        count_h_2 = (m_h['GM_M'] >= 2).sum()
+                        count_v_1 = (m_v['GM_V'] >= 1).sum()
+                        
+                        pass_filter = fa_casa >= 1.40 and fa_fora >= 1.30 and count_h_2 >= 4 and count_v_1 >= 4
+                        return pd.Series([pass_filter, fa_casa, fa_fora, count_h_2, count_v_1, media_geral])
 
                     if not df_elite_home.empty:
-                        df_elite_home['Pass_New'] = df_elite_home.apply(check_maquinas_new, axis=1)
-                        df_filtered = df_elite_home[df_elite_home['Pass_New'] == True].copy()
+                        res_df = df_elite_home.apply(check_maquinas_soberana, axis=1)
+                        df_elite_home[['Pass_S', 'FA_C_S', 'FA_V_S', 'Freq_H_S', 'Freq_V_S', 'Media_G_S']] = res_df
+                        df_filtered = df_elite_home[df_elite_home['Pass_S'] == True].copy()
                     else:
                         df_filtered = pd.DataFrame()
                     
                     df_filtered['IM'] = (df_filtered['TGM'] / df_filtered['TJT'].replace(0,1)) * (df_filtered['TGS'] / df_filtered['TJT'].replace(0,1))
-                    top_data = df_filtered.sort_values(by='IM', ascending=False).head(15)
+                    top_data = df_filtered.sort_values(by='IM', ascending=False).head(16)
                 elif st.session_state.home_view == 'Ataque':
                     st.markdown('<div class="box-title">🔥 Top 15 Clubes Marcadores (Ataque de Elite)</div>', unsafe_allow_html=True)
-                    top_data = df_elite_home.sort_values(by='TGM', ascending=False).head(15)
+                    top_data = df_elite_home.sort_values(by='TGM', ascending=False).head(16)
                 else:
                     st.markdown('<div class="box-title">❄️ Bottom 15 Defesas (Defesas Horríveis)</div>', unsafe_allow_html=True)
-                    top_data = df_elite_home.sort_values(by='TGS', ascending=False).head(15)
+                    top_data = df_elite_home.sort_values(by='TGS', ascending=False).head(16)
                 
                 top_list = top_data.to_dict('records')
-                cols = st.columns(3)
-                for i in range(3):
-                    with cols[i]:
-                        for j in range(5):
-                            idx = i * 5 + j
-                            if idx < len(top_list):
-                                team = top_list[idx]
-                                t_stats = get_team_stats(team['Equipe'], df_dados, df_equipes)
-                                form_html = "".join([f'<span class="form-pill pill-{r.lower()}">{r}</span>' for r in t_stats['form']])
-                                # Calcular médias por lado
-                                avg_gmc = t_stats['gmc'] / t_stats['tjm'] if t_stats['tjm'] > 0 else 0
-                                avg_gsc = t_stats['gsc'] / t_stats['tjm'] if t_stats['tjm'] > 0 else 0
-                                avg_gmv = t_stats['gmv'] / t_stats['tjv'] if t_stats['tjv'] > 0 else 0
-                                avg_gsv = t_stats['gsv'] / t_stats['tjv'] if t_stats['tjv'] > 0 else 0
-                                
-                                st.markdown(f"""
-                                    <a href="/?time={team['Equipe']}" target="_self" class="card-link">
-                                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;">
-                                            <span style="font-weight:700; font-size:0.85rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 160px;" title="{team['Equipe']}">{idx+1}. {team['Equipe']}</span>
-                                            <div>{form_html}</div>
-                                        </div>
-                                        <div style="font-size:0.7rem; color:#718096; margin-bottom:8px; display:flex; align-items:center; gap:5px;">{t_stats['pais']} - {t_stats['liga']} {get_flag_img(f"{t_stats['pais']} - {t_stats['liga']}")}</div>
-                                        <div style="display:flex; flex-direction:column; gap:4px; font-size:0.75rem;">
-                                            <div style="display:flex; justify-content:space-between;">
-                                                <div><span style="color:#718096;">Casa (Avg):</span> {format_avg_html(avg_gmc, "#38A169")} / {format_avg_html(avg_gsc, "#E53E3E")}</div>
-                                                <span class="total-gm">{int(team['TGM'])}M</span>
-                                            </div>
-                                            <div style="display:flex; justify-content:space-between;">
-                                                <div><span style="color:#718096;">Fora (Avg):</span> {format_avg_html(avg_gmv, "#38A169")} / {format_avg_html(avg_gsv, "#E53E3E")}</div>
-                                                <span class="total-gs">{int(team['TGS'])}S</span>
-                                            </div>
-                                        </div>
-                                    </a>
-                                """, unsafe_allow_html=True)
+                cols = st.columns(2) # Mudança para 2 colunas
+                for idx, team in enumerate(top_list):
+                    with cols[idx % 2]:
+                        t_stats = get_team_stats(team['Equipe'], df_dados, df_equipes)
+                        form_html = "".join([f'<span class="form-pill pill-{r.lower()}">{r}</span>' for r in t_stats['form']])
+                        
+                        # Métrica de exibição (Usando as normalizadas se for Over)
+                        if st.session_state.home_view == 'Over':
+                            fa_c_disp = team['FA_C_S']
+                            fa_v_disp = team['FA_V_S']
+                            freq_h = int(team['Freq_H_S'])
+                            freq_v = int(team['Freq_V_S'])
+                            media_g = team['Media_G_S']
+                        else:
+                            fa_c_disp = team['FAM'] / 1.35 # Fallback aproximado
+                            fa_v_disp = team['FAV'] / 1.15
+                            freq_h, freq_v = 0, 0
+                            media_g = team['TGM'] / team['TJT'] if team['TJT'] > 0 else 0
+
+                        st.markdown(f"""
+                            <a href="/?time={team['Equipe']}" target="_self" class="card-link" style="height: auto; min-height: 120px;">
+                                <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+                                    <div style="flex:1;">
+                                        <div style="font-weight:800; font-size:1rem; color:#1A365D; margin-bottom:2px;">{idx+1}. {team['Equipe']}</div>
+                                        <div style="font-size:0.75rem; color:#718096; margin-bottom:10px;">{t_stats['pais']} - {t_stats['liga']} {get_flag_img(f"{t_stats['pais']} - {t_stats['liga']}")}</div>
+                                    </div>
+                                    <div style="display:flex; flex-direction:column; align-items:flex-end; gap:5px;">
+                                        <div>{form_html}</div>
+                                        <div style="font-size:0.75rem; font-weight:700; color:#3182CE;">IM: {team.get('IM', 0):.2f}</div>
+                                    </div>
+                                </div>
+                                <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:10px; border-top:1px solid #EDF2F7; padding-top:10px;">
+                                    <div style="text-align:center;">
+                                        <div style="font-size:0.65rem; color:#718096; text-transform:uppercase; font-weight:700;">FA Casa</div>
+                                        <div style="font-size:1.1rem; font-weight:800; color:#38A169;">{fa_c_disp:.2f}</div>
+                                        <div style="font-size:0.6rem; color:#A0AEC0;">Freq: {freq_h}/6</div>
+                                    </div>
+                                    <div style="text-align:center; border-left:1px solid #EDF2F7; border-right:1px solid #EDF2F7;">
+                                        <div style="font-size:0.65rem; color:#718096; text-transform:uppercase; font-weight:700;">FA Fora</div>
+                                        <div style="font-size:1.1rem; font-weight:800; color:#3182CE;">{fa_v_disp:.2f}</div>
+                                        <div style="font-size:0.6rem; color:#A0AEC0;">Freq: {freq_v}/6</div>
+                                    </div>
+                                    <div style="text-align:center;">
+                                        <div style="font-size:0.65rem; color:#718096; text-transform:uppercase; font-weight:700;">Média G</div>
+                                        <div style="font-size:1.1rem; font-weight:800; color:#2D3748;">{media_g:.2f}</div>
+                                        <div style="font-size:0.6rem; color:#A0AEC0;">Total Partidas</div>
+                                    </div>
+                                </div>
+                            </a>
+                        """, unsafe_allow_html=True)
+                
+                # Card de Critérios (Apenas no modo Over)
+                if st.session_state.home_view == 'Over':
+                    st.markdown("""
+                        <div style="background: linear-gradient(135deg, #F0F9FF 0%, #E0F2FE 100%); border-radius: 14px; padding: 20px; border-left: 6px solid #3182CE; margin-top: 20px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);">
+                            <div style="font-weight: 800; color: #1E3A8A; font-size: 0.95rem; margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
+                                🛡️ Doutrina de Classificação Soberana (V7.1)
+                            </div>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; font-size: 0.8rem; color: #334155;">
+                                <div>
+                                    <p><b>1. Força de Ataque (FA):</b> Exige-se FA Casa ≥ 1.40 e FA Fora ≥ 1.30 em relação à média efetiva da liga.</p>
+                                    <p><b>2. Frequência (4/6):</b> A equipe deve marcar 2+ gols em casa e 1+ gol fora em pelo menos 66% dos jogos.</p>
+                                </div>
+                                <div>
+                                    <p><b>3. Normalização de Outliers:</b> Resultados de 6+ gols são "podados" para 90% da média da equipe (se isolados) para evitar inflação artificial.</p>
+                                    <p><b>4. Soberania do Padrão:</b> Se a goleada (6+) ocorre em 2 ou mais jogos, ela é aceita como realidade técnica da equipe.</p>
+                                </div>
+                            </div>
+                        </div>
+                    """, unsafe_allow_html=True)
 
     elif st.session_state.menu == 'Modelo 01':
         st.markdown(f"""<div class="sim-header"><h3 style="margin:0; color:#2C5282;">⚔️ Simulador de Confronto & Prova Real</h3><p style="margin:0; color:#4A5568; font-size:0.9rem;">Diagnóstico Robusto: Cruzamento Técnico (Confronto) + Validação Empírica (Prova Real)</p></div>""", unsafe_allow_html=True)
