@@ -557,6 +557,10 @@ if all_data:
                         fa_v_disp = team['FA_V_S'] if st.session_state.home_view == 'Over' else (team['FAV'] / 1.15)
                         freq_h = int(team.get('Freq_H_S', 0))
                         freq_v = int(team.get('Freq_V_S', 0))
+                        
+                        ivc_geral = team.get('IVC', 0)
+                        ivc_casa = avg_gmc * avg_gsc
+                        ivc_fora = avg_gmv * avg_gsv
 
                         st.markdown(f"""
                             <a href="/?time={team['Equipe']}" target="_self" class="card-link" style="height: auto; min-height: 140px;">
@@ -569,7 +573,7 @@ if all_data:
                                     </div>
                                     <div style="display:flex; flex-direction:column; align-items:flex-end; gap:5px;">
                                         <div>{form_html}</div>
-                                        <div style="font-size:0.7rem; font-weight:800; color:#3182CE; background:#EBF8FF; padding:2px 6px; border-radius:4px;">IVC: {team.get('IVC', 0):.2f}</div>
+                                        <div style="font-size:0.7rem; font-weight:800; color:#3182CE; background:#EBF8FF; padding:2px 6px; border-radius:4px;">IVC: {ivc_geral:.2f} | Casa: {ivc_casa:.2f} | Fora: {ivc_fora:.2f}</div>
                                     </div>
                                 </div><div style="display:flex; flex-direction:column; gap:6px; font-size:0.8rem; border-top:1px solid #EDF2F7; padding-top:10px; margin-bottom:10px;">
                                     <div style="display:flex; justify-content:space-between; align-items:center;">
