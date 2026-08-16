@@ -1246,14 +1246,19 @@ if all_data:
                 cashouts_b = sum(1 for b in liquidados if 'cashout' in b['resultado'].lower())
                 pnl_b = sum(b['pl'] for b in bilhetes_list) # P/L continua sendo o total geral
                 
-                b1, b2, b3, b4, b5, b6, b7 = st.columns(7)
+                b1, b2, b3, b4, b5, b6 = st.columns([1, 1.5, 1, 1, 1, 1.2])
                 b1.metric('Liquidados', total_liq)
-                b2.metric('Greens', greens_b)
+                
+                # Acertos: Somatória de Greens + Cashouts
+                acertos_total = greens_b + cashouts_b
+                b2.metric('Acertos', acertos_total, help=f"Greens ({greens_b}) + Cashouts ({cashouts_b})")
+                with b2:
+                    st.markdown(f'<p style="font-size:0.7rem; color:#718096; margin-top:-15px;">({greens_b} G + {cashouts_b} C)</p>', unsafe_allow_html=True)
+                
                 b3.metric('Devolvidas', devolvidas_b)
-                b4.metric('Cashouts', cashouts_b)
-                b5.metric('Meio-Red', meio_red_b)
-                b6.metric('Reds', reds_b)
-                b7.metric('P/L Total', f'R$ {pnl_b:,.2f}'.replace(',', 'X').replace('.', ',').replace('X', '.'))
+                b4.metric('Meio-Red', meio_red_b)
+                b5.metric('Erros', reds_b)
+                b6.metric('P/L Total', f'R$ {pnl_b:,.2f}'.replace(',', 'X').replace('.', ',').replace('X', '.'))
                 st.markdown('---')
 
                 cards_html = """
