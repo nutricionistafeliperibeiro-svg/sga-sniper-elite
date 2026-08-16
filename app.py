@@ -255,6 +255,12 @@ def normalize_text(text):
     text = text.strip().lower()
     return "".join(c for c in unicodedata.normalize('NFD', text) if unicodedata.category(c) != 'Mn')
 
+def get_hybrid_name(name):
+    norm = normalize_text(name)
+    if norm == name.lower():
+        return name
+    return f"{name} [{norm.upper()}]"
+
 def format_avg_html(val, color):
     weight = "800" if val >= 3.0 else "400"
     return f'<span style="color:{color}; font-weight:{weight};">{val:.2f}</span>'
@@ -437,21 +443,14 @@ if all_data:
         else:
             # HOME
             st.markdown(f"""<div class="summary-bar"><div>Resultados de partidas · Janela Móvel de 12 jogos</div><div>{len(df_dados)} registros · {len(df_equipes)} clubes</div></div>""", unsafe_allow_html=True)
-            col_search, col_liga, col_btns = st.columns([1, 1, 1])
+            col_search, col_liga, col_btns = st.columns([1.5, 1, 1])
             with col_search:
                 clubes_list_raw = sorted(df_equipes['Equipe'].dropna().unique().tolist())
-                search_query = st.text_input("Buscar clube...", value="", placeholder="🔍 Digite o nome do clube (ex: Gremio)...", label_visibility="collapsed")
-                
-                if search_query:
-                    norm_query = normalize_text(search_query)
-                    filtered_clubes = [c for c in clubes_list_raw if norm_query in normalize_text(c)]
-                    if filtered_clubes:
-                        sel_clube = st.selectbox("Clubes encontrados:", [""] + filtered_clubes, key="search_results")
-                        if sel_clube:
-                            st.session_state.selected_clube = sel_clube
-                            st.rerun()
-                    else:
-                        st.warning("Nenhum clube encontrado.")
+                hybrid_clubes = {get_hybrid_name(c): c for c in clubes_list_raw}
+                sel_clube_hybrid = st.selectbox("Buscar clube...", ["🔍 Selecione ou digite o nome do clube..."] + list(hybrid_clubes.keys()), key="search_results", label_visibility="collapsed")
+                if sel_clube_hybrid != "🔍 Selecione ou digite o nome do clube...":
+                    st.session_state.selected_clube = hybrid_clubes[sel_clube_hybrid]
+                    st.rerun()
             with col_liga:
                 liga_list = ["Todas as Ligas"] + sorted(df_dados['Pais_Liga'].unique().tolist())
                 sel_liga = st.selectbox("Filtrar por Liga", liga_list, label_visibility="collapsed")
@@ -662,6 +661,8 @@ if all_data:
     elif st.session_state.menu == 'Análise':
         st.markdown('''<div class="sim-header"><h3 style="margin:0; color:#2C5282;">🚀 Análise — Montagem em Bloco</h3><p style="margin:0; color:#4A5568; font-size:0.9rem;">Selecione vários confrontos e classifique os melhores para análise de gols e linhas asiáticas.</p></div>''', unsafe_allow_html=True)
         clubes_bloco_raw = sorted(df_equipes['Equipe'].dropna().astype(str).unique().tolist())
+        hybrid_bloco = {get_hybrid_name(c): c for c in clubes_bloco_raw}
+        hybrid_options = ["Selecione..."] + list(hybrid_bloco.keys())
         
         # Barra de Ferramentas — Apenas Ferramentas
         t_col1, t_col2, t_col3 = st.columns([1.5, 0.8, 0.8])
@@ -693,15 +694,34 @@ if all_data:
             st.session_state.block_notice = ''
 
         with st.form('form_adicionar_confronto', clear_on_submit=True):
-            st.markdown('<p style="font-size:0.85rem; color:#718096; margin-bottom:10px;"><b>Dica:</b> Digite o nome da equipe diretamente nos campos abaixo para buscar.</p>', unsafe_allow_html=True)
+            st.markdown('<p style="font-size:0.85rem; color:#718096; margin-bottom:10px;"><b>Dica:</b> Digite o nome da equipe (mesmo sem acento) nos campos abaixo para buscar.</p>', unsafe_allow_html=True)
             b_col1, b_col2, b_col3 = st.columns([2, 0.4, 2])
             with b_col1:
-                bloco_mandante = st.selectbox('Mandante', ['Selecione...'] + clubes_bloco_raw, key='bloco_mandante')
+                bloco_mandante_hybrid = st.selectbox('Mandante', hybrid_options, key='bloco_mandante')
             with b_col2:
                 st.markdown('<div style="font-size:1.2rem; font-weight:800; color:#CBD5E0; height:70px; display:flex; align-items:center; justify-content:center;">VS</div>', unsafe_allow_html=True)
             with b_col3:
-                bloco_visitante = st.selectbox('Visitante', ['Selecione...'] + clubes_bloco_raw, key='bloco_visitante')
+                bloco_visitante_hybrid = st.selectbox('Visitante', hybrid_options, key='bloco_visitante')
             adicionar_bloco = st.form_submit_button('＋ Adicionar confronto ao bloco', use_container_width=True)
+        
+        if adicionar_bloco:
+            if bloco_mandante_hybrid == 'Selecione...' or bloco_visitante_hybrid == 'Selecione...':
+                st.session_state.block_notice = 'Selecione o mandante e o visitante antes de adicionar.'
+                st.rerun()
+            else:
+                m_real = hybrid_bloco[bloco_mandante_hybrid]
+                v_real = hybrid_bloco[bloco_visitante_hybrid]
+                if m_real == v_real:
+                    st.session_state.block_notice = 'O mandante e o visitante precisam ser equipes diferentes.'
+                    st.rerun()
+                elif any(x['mandante'] == m_real and x['visitante'] == v_real for x in st.session_state.block_matches):
+                    st.session_state.block_notice = 'Este confronto já está no bloco.'
+                    st.rerun()
+                else:
+                    st.session_state.block_matches.append({'mandante': m_real, 'visitante': v_real})
+                    st.session_state.block_results = []
+                    st.session_state.block_notice = f'{m_real} x {v_real} adicionado ao bloco.'
+                    st.rerun()
         if adicionar_bloco:
             if bloco_mandante == 'Selecione...' or bloco_visitante == 'Selecione...':
                 st.session_state.block_notice = 'Selecione o mandante e o visitante antes de adicionar.'
