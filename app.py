@@ -271,7 +271,7 @@ def get_flag_img(pais_liga):
     iso_map = {
         'BRA': 'br', 'USA': 'us', 'FIN': 'fi', 'NOR': 'no', 'ISL': 'is', 
         'BOL': 'bo', 'ARG': 'ar', 'CHI': 'cl', 'COL': 'co', 'PAR': 'py', 
-        'URU': 'uy', 'VEN': 've', 'MEX': 'mx', 'GER': 'de', 'ENG': 'gb-eng', 
+        'URU': 'uy', 'VEN': 've', 'ECU': 'ec', 'MEX': 'mx', 'GER': 'de', 'ENG': 'gb-eng', 
         'SPA': 'es', 'ESP': 'es', 'ITA': 'it', 'FRA': 'fr', 'POR': 'pt', 
         'HOL': 'nl', 'NED': 'nl', 'BEL': 'be', 'SWE': 'se', 'DEN': 'dk', 
         'AUT': 'at', 'SWI': 'ch', 'SUI': 'ch', 'JPN': 'jp', 'KOR': 'kr',
