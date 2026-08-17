@@ -563,7 +563,7 @@ if all_data:
                         freq_h = int(team.get('Freq_H_S', 0))
                         freq_v = int(team.get('Freq_V_S', 0))
                         
-                        ivc_geral = team.get('IVC', 0)
+                        ivc_geral = team.get('IVC', (team['TGM']/team['TJT']) * (team['TGS']/team['TJT']) if team['TJT'] > 0 else 0)
                         ivc_casa = avg_gmc * avg_gsc
                         ivc_fora = avg_gmv * avg_gsv
                         
