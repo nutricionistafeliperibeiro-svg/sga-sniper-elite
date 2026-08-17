@@ -13,7 +13,7 @@ import streamlit.components.v1 as components
 st.set_page_config(page_title="Sistema de Apostas — Futebol", layout="wide", page_icon="📈")
 
 # Inicialização do Estado
-if 'menu' not in st.session_state: st.session_state.menu = 'Dados'
+if 'menu' not in st.session_state: st.session_state.menu = 'Principal'
 if 'selected_clube' not in st.session_state: st.session_state.selected_clube = ""
 if 'home_view' not in st.session_state: st.session_state.home_view = 'Over'
 if 'block_matches' not in st.session_state: st.session_state.block_matches = []
@@ -26,7 +26,7 @@ if 'block_matches_file' not in st.session_state: st.session_state.block_matches_
 q_params = st.query_params
 if "time" in q_params:
     st.session_state.selected_clube = q_params["time"]
-    st.session_state.menu = 'Dados'
+    st.session_state.menu = 'Principal'
     # Limpamos para permitir que o usuário use o menu depois
     st.query_params.clear()
 elif "menu" in q_params:
@@ -358,7 +358,7 @@ if all_data:
     st.markdown(f"""
         <div class="header-container">
             <div style="display:flex; align-items:center; gap:20px;">
-                <a href="/?menu=Dados" target="_self" class="logo-link">
+                <a href="/?menu=Principal" target="_self" class="logo-link">
                     <div style="background: rgba(255,255,255,0.1); padding: 8px; border-radius: 12px; backdrop-filter: blur(4px);">
                         <img src="data:image/png;base64,{LOGO_B64}" style="width:50px; height:50px; object-fit:contain;">
                     </div>
@@ -381,8 +381,8 @@ if all_data:
     # NAVEGAÇÃO DO MENU (Ajuste de largura para incluir Ranking)
     m_cols = st.columns([2.5, 1.2, 1.2, 1.2, 1.2, 1.2, 1.5])
     with m_cols[1]:
-        if st.button("📁 Dados", use_container_width=True):
-            st.session_state.menu = 'Dados'
+        if st.button("📁 Principal", use_container_width=True):
+            st.session_state.menu = 'Principal'
             st.session_state.selected_clube = ""
             st.rerun()
     with m_cols[2]:
@@ -410,9 +410,9 @@ if all_data:
             st.rerun()
 
     # --- TELAS ---
-    if st.session_state.menu == 'Dados':
+    if st.session_state.menu == 'Principal':
         if st.session_state.selected_clube:
-            st.markdown(f'<a href="/?menu=Dados" target="_self" style="color:#00A3E0; text-decoration:none; font-size:0.85rem; font-weight:600;">⬅ Voltar para o Dashboard Inicial</a>', unsafe_allow_html=True)
+            st.markdown(f'<a href="/?menu=Principal" target="_self" style="color:#00A3E0; text-decoration:none; font-size:0.85rem; font-weight:600;">⬅ Voltar para o Dashboard Inicial</a>', unsafe_allow_html=True)
             st.markdown("<div style='margin-bottom:15px;'></div>", unsafe_allow_html=True)
             
             stats = get_team_stats(st.session_state.selected_clube, df_dados, df_equipes)
