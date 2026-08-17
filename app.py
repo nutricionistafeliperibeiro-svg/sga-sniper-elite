@@ -599,11 +599,11 @@ if all_data:
                                         <div style="font-weight:800; color:#E53E3E; background:#FFF5F5; padding:1px 6px; border-radius:4px; font-size:0.7rem;">{int(team['TGS'])}S</div>
                                     </div></div><div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; background:#F8FAFC; padding:8px; border-radius:8px; border:1px solid #EDF2F7;">
                                     <div style="text-align:center;">
-                                        <div style="font-size:0.6rem; color:#718096; text-transform:uppercase; font-weight:700;">FA Casa | Freq</div>
+                                        <div style="font-size:0.6rem; color:#718096; text-transform:uppercase; font-weight:700;">Força de Ataque Casa | Freq</div>
                                         <div style="font-size:0.9rem; font-weight:800; color:#2D3748;">{fa_c_disp:.2f} <span style="color:#A0AEC0; font-size:0.7rem;">({freq_h}/6)</span></div>
                                     </div>
                                     <div style="text-align:center; border-left:1px solid #EDF2F7;">
-                                        <div style="font-size:0.6rem; color:#718096; text-transform:uppercase; font-weight:700;">FA Fora | Freq</div>
+                                        <div style="font-size:0.6rem; color:#718096; text-transform:uppercase; font-weight:700;">Força de Ataque Fora | Freq</div>
                                         <div style="font-size:0.9rem; font-weight:800; color:#2D3748;">{fa_v_disp:.2f} <span style="color:#A0AEC0; font-size:0.7rem;">({freq_v}/6)</span></div>
                                     </div>
                                 </div>
@@ -619,7 +619,7 @@ if all_data:
                             </div>
                             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; font-size: 0.8rem; color: #334155;">
                                 <div>
-                                    <p><b>1. Força de Ataque (FA):</b> Exige-se FA Casa ≥ 1.40 e FA Fora ≥ 1.30 em relação à média efetiva da liga.</p>
+                                    <p><b>1. Força de Ataque:</b> Exige-se Força de Ataque Casa ≥ 1.40 e Força de Ataque Fora ≥ 1.30 em relação à média efetiva da liga.</p>
                                     <p><b>2. Frequência (4/6):</b> A equipe deve marcar 2+ gols em casa e 1+ gol fora em pelo menos 66% dos jogos.</p>
                                     <p><b>3. Volume Mínimo:</b> Exige-se um total de pelo menos 25 gols marcados na janela de 12 jogos.</p>
                                 </div>
