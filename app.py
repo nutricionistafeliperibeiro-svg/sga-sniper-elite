@@ -13,6 +13,7 @@ import streamlit.components.v1 as components
 st.set_page_config(page_title="Sistema de Apostas — Futebol", layout="wide", page_icon="📈")
 
 # Inicialização do Estado
+st.write("SGA V7.1 Iniciando...")
 if 'menu' not in st.session_state: st.session_state.menu = 'Principal'
 if 'selected_clube' not in st.session_state: st.session_state.selected_clube = ""
 if 'home_view' not in st.session_state: st.session_state.home_view = 'Over'
@@ -240,7 +241,9 @@ else:
         mtime = os.path.getmtime(EXCEL_PATH)
     except:
         mtime = "default"
-    all_data = load_data(EXCEL_PATH, force_reload=str(mtime))
+    st.write("Carregando base de dados...")
+all_data = load_data(EXCEL_PATH, force_reload=str(mtime))
+st.write("Base carregada com sucesso!")
 
 def get_base64_image(image_path):
     with open(image_path, "rb") as img_file:
@@ -1736,3 +1739,4 @@ if all_data:
             st.info('A aba Radar Over não foi encontrada no arquivo Excel.')
 else:
     st.error("Erro ao carregar banco de dados.")
+# Force redeploy 7.1.4 - Corrected Import
