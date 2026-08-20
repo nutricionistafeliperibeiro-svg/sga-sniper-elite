@@ -212,38 +212,28 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-# Carregamento de Dados com Cache para Performance (Versão 7.1.3)
-# @st.cache_data(ttl=30)
-def load_data(file_content, force_reload=False):
+@st.cache_data(ttl=60)
+def load_data(file_path):
     try:
-        # file_content pode ser um path (string) ou BytesIO (upload)
-        data_dict = pd.read_excel(file_content, sheet_name=None)
+        sheets = ['Dados', 'Equipes', 'Ligas', 'Radar Over', 'Modelo 01', 'Modelo 02', 'Prova Real', 'Bilhetes', 'Track Record']
+        data_dict = {}
+        with pd.ExcelFile(file_path) as xls:
+            available_sheets = xls.sheet_names
+            for s in sheets:
+                if s in available_sheets:
+                    data_dict[s] = pd.read_excel(xls, sheet_name=s)
         if 'Dados' in data_dict:
-            df_dados = data_dict['Dados']
-            df_dados['Data'] = pd.to_datetime(df_dados['Data'], dayfirst=True, errors='coerce')
-            df_dados['Pais_Liga'] = df_dados['País'].astype(str) + " - " + df_dados['Liga'].astype(str)
+            df = data_dict['Dados']
+            df['Data'] = pd.to_datetime(df['Data'], dayfirst=True, errors='coerce')
+            data_dict['Dados'] = df
         return data_dict
     except Exception as e:
-        st.error(f"Erro ao carregar Excel: {e}")
+        st.error(f"Erro no Excel: {e}")
         return None
 
 EXCEL_PATH = "tabela_de_dados_apostas_V3.xlsx"
 
-# Lógica de prioridade: Upload > Arquivo Local
-uploaded_file = st.session_state.get('uploaded_file', None)
-if uploaded_file:
-    # Usamos o tamanho do arquivo como chave para forçar recarregamento
-    all_data = load_data(uploaded_file, force_reload=str(uploaded_file.size))
-else:
-    # Para o arquivo local, usamos a data de modificação
-    import os
-    try:
-        mtime = os.path.getmtime(EXCEL_PATH)
-    except:
-        mtime = "default"
-    st.write("Carregando base de dados...")
-all_data = load_data(EXCEL_PATH, force_reload=str(mtime))
-st.write("Base carregada com sucesso!")
+all_data = load_data(EXCEL_PATH)
 
 def get_base64_image(image_path):
     with open(image_path, "rb") as img_file:
