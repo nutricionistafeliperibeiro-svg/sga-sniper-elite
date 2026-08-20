@@ -145,7 +145,7 @@ def load_data(file_path):
         st.error(f"Erro ao carregar Excel: {e}")
         return None
 
-EXCEL_PATH = "/home/ubuntu/upload/tabela_de_dados_apostas_V3.xlsx"
+EXCEL_PATH = "tabela_de_dados_apostas_V3.xlsx"
 all_data = load_data(EXCEL_PATH)
 
 def normalize_text(text):
