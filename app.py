@@ -213,7 +213,7 @@ st.markdown("""
     """, unsafe_allow_html=True)
 
 # Carregamento de Dados com Cache para Performance (Versão 7.1.3)
-@st.cache_data(ttl=30) # Cache expira em 30 segundos para garantir sincronia total
+# @st.cache_data(ttl=30)
 def load_data(file_content, force_reload=False):
     try:
         # file_content pode ser um path (string) ou BytesIO (upload)
