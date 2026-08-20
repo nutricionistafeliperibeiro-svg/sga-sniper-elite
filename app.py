@@ -4,103 +4,130 @@ import numpy as np
 import os
 import base64
 import unicodedata
-import json
 from scipy.stats import poisson, nbinom
 from datetime import datetime
 
 # Configuração da página
-st.set_page_config(page_title="Inteligência de Dados Pré-Live", layout="wide", page_icon="📈")
+st.set_page_config(page_title="SGA V7.1 — Sniper Elite", layout="wide", page_icon="📈")
 
 # Inicialização do Estado
 if 'menu' not in st.session_state: st.session_state.menu = 'Principal'
 if 'block_matches' not in st.session_state: st.session_state.block_matches = []
 if 'block_results' not in st.session_state: st.session_state.block_results = []
 
-# --- ESTILOS CSS (PROFISSIONAL LIGHT) ---
+# --- ESTILIZAÇÃO CSS PREMIUM LIGHT (RESTAURADA) ---
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
     
-    html, body, [data-testid="stAppViewContainer"] {
-        font-family: 'Inter', sans-serif;
-        background-color: #F8FAFC;
-        color: #1E293B;
-    }
-    
-    .main-header {
-        background: #FFFFFF;
-        padding: 1.5rem;
-        border-radius: 16px;
-        border: 1px solid #E2E8F0;
-        margin-bottom: 2rem;
-        text-align: center;
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-    }
-    
-    .title-main {
-        font-size: 2.2rem;
-        font-weight: 800;
-        color: #1E40AF;
-        margin-bottom: 0.2rem;
-    }
-    
-    .subtitle-main {
-        color: #64748B;
-        font-size: 1rem;
-        font-weight: 500;
+    :root {
+        --primary-navy: #1A365D;
+        --accent-blue: #3182CE;
+        --light-blue: #EBF8FF;
+        --border-color: #E2E8F0;
+        --text-main: #2D3748;
+        --text-muted: #718096;
+        --bg-main: #FFFFFF;
+        --bg-soft: #F7FAFC;
     }
 
-    /* Cards Estilizados */
-    .card-container {
-        background: #FFFFFF;
-        border: 1px solid #E2E8F0;
-        border-radius: 16px;
-        padding: 1.2rem;
-        margin-bottom: 1rem;
-        transition: all 0.2s ease;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    html, body, [class*="css"] { 
+        font-family: 'Inter', sans-serif; 
+        background-color: var(--bg-main); 
+        color: var(--text-main); 
     }
     
-    .card-container:hover {
-        border-color: #3B82F6;
-        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    .stApp { background-color: var(--bg-main); }
+    
+    header { visibility: hidden; height: 0; }
+    .block-container { padding-top: 0rem !important; padding-bottom: 1rem !important; max-width: 1200px !important; }
+    
+    .header-container { 
+        display: flex; 
+        justify-content: space-between; 
+        align-items: center; 
+        padding: 20px 30px; 
+        background: linear-gradient(135deg, #1A365D 0%, #2A4365 100%);
+        border-radius: 0 0 20px 20px;
+        margin-bottom: 30px;
+        box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+    }
+    .title-main { font-size: 1.8rem; font-weight: 800; margin: 0; color: #FFFFFF; letter-spacing: -0.5px; }
+    .subtitle-main { font-size: 0.9rem; color: #A0AEC0; margin: 0; font-weight: 400; }
+    
+    .stButton > button {
+        border-radius: 12px !important;
+        border: 1px solid var(--border-color) !important;
+        background-color: white !important;
+        color: var(--text-main) !important;
+        font-weight: 600 !important;
+        transition: all 0.2s ease !important;
+        height: 45px !important;
+    }
+    .stButton > button:hover {
+        border-color: var(--accent-blue) !important;
+        color: var(--accent-blue) !important;
+        background-color: var(--light-blue) !important;
+        transform: translateY(-1px);
+    }
+
+    /* Cards Estilizados V7.1 */
+    .card-container {
+        background-color: white; 
+        border: 1px solid var(--border-color); 
+        border-radius: 18px; 
+        padding: 20px; 
+        margin-bottom: 20px; 
+        transition: all 0.3s ease; 
+        box-shadow: 0 2px 4px rgba(0,0,0,0.04);
+    }
+    .card-container:hover { 
+        border-color: var(--accent-blue); 
+        box-shadow: 0 12px 24px rgba(49, 130, 206, 0.1); 
+        transform: translateY(-4px); 
     }
 
     .rating-badge {
-        padding: 4px 10px;
-        border-radius: 6px;
-        font-size: 0.7rem;
-        font-weight: 700;
+        padding: 5px 12px;
+        border-radius: 8px;
+        font-size: 0.75rem;
+        font-weight: 800;
         text-transform: uppercase;
-        margin-bottom: 8px;
         display: inline-block;
+        margin-top: 10px;
     }
-    
     .rating-ouro { background-color: #FEF3C7; color: #92400E; border: 1px solid #FCD34D; }
     .rating-prata { background-color: #F1F5F9; color: #475569; border: 1px solid #CBD5E1; }
     .rating-risco { background-color: #FEE2E2; color: #991B1B; border: 1px solid #FCA5A5; }
 
-    .ivc-box {
+    .ivc-rect {
         background: #EFF6FF;
         border: 1px solid #BFDBFE;
         border-radius: 6px;
-        padding: 2px 8px;
+        padding: 3px 10px;
         color: #1D4ED8;
-        font-weight: 700;
+        font-weight: 800;
         font-size: 0.8rem;
         display: inline-block;
-        margin-left: 4px;
+        margin-left: 6px;
     }
 
-    .stat-label { color: #64748B; font-size: 0.7rem; font-weight: 600; text-transform: uppercase; margin-bottom: 2px; }
-    .stat-value { font-size: 1rem; font-weight: 700; }
-    .stat-value-green { color: #059669; }
-    .stat-value-red { color: #DC2626; }
+    .stat-label { color: var(--text-muted); font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
+    .stat-value { font-size: 1.1rem; font-weight: 800; }
+    .stat-value-green { color: #38A169; }
+    .stat-value-red { color: #E53E3E; }
     
-    .stButton > button {
-        border-radius: 10px !important;
-        font-weight: 600 !important;
+    .box-title { 
+        font-size: 1rem; 
+        font-weight: 800; 
+        color: var(--primary-navy); 
+        margin-bottom: 20px; 
+        text-transform: uppercase; 
+        display: flex;
+        align-items: center;
+        gap: 10px;
     }
+    .box-title::before { content: ""; display: block; width: 4px; height: 20px; background: var(--accent-blue); border-radius: 2px; }
     </style>
     """, unsafe_allow_html=True)
 
@@ -108,14 +135,7 @@ st.markdown("""
 @st.cache_data(ttl=60)
 def load_data(file_path):
     try:
-        data_dict = {}
-        with pd.ExcelFile(file_path) as xls:
-            available_sheets = xls.sheet_names
-            sheets_to_load = ['Dados', 'Equipes', 'Ligas', 'Radar Over', 'Modelo 01', 'Modelo 02', 'Prova Real', 'Bilhetes', 'Track Record']
-            for s in sheets_to_load:
-                if s in available_sheets:
-                    data_dict[s] = pd.read_excel(xls, sheet_name=s)
-        
+        data_dict = pd.read_excel(file_path, sheet_name=None)
         if 'Dados' in data_dict:
             df = data_dict['Dados']
             df['Data'] = pd.to_datetime(df['Data'], dayfirst=True, errors='coerce')
@@ -138,11 +158,11 @@ def get_flag_img(country_name):
         'brasil': 'br', 'argentina': 'ar', 'equador': 'ec', 'china': 'cn', 'islandia': 'is',
         'suecia': 'se', 'noruega': 'no', 'finlandia': 'fi', 'eua': 'us', 'australia': 'au'
     }
-    norm_country = normalize_text(country_name)
-    code = country_map.get(norm_country, norm_country[:2])
+    norm = normalize_text(country_name)
+    code = country_map.get(norm, norm[:2])
     return f"https://flagcdn.com/w40/{code}.png"
 
-# --- LÓGICA DE CLASSIFICAÇÃO ---
+# --- LÓGICA DE CLASSIFICAÇÃO (V7.1) ---
 def get_rating_info(ivc):
     if ivc >= 2.40: return "Classe A — Faixa Ouro", "rating-ouro", "🥇"
     if ivc >= 1.83: return "Classe B — Faixa Prata", "rating-prata", "🥈"
@@ -188,9 +208,15 @@ def get_team_stats(team_name, df_dados, df_equipes):
 
 # --- INTERFACE ---
 st.markdown(f"""
-    <div class="main-header">
-        <p class="title-main">Inteligência de Dados Pré-Live</p>
-        <p class="subtitle-main">SGA V7.1 — Sniper Elite (Fato Soberano)</p>
+    <div class="header-container">
+        <div>
+            <p class="title-main">Inteligência de Dados Pré-Live</p>
+            <p class="subtitle-main">SGA V7.1 — Sniper Elite (Fato Soberano)</p>
+        </div>
+        <div style="text-align:right;">
+            <span style="color:#63B3ED; font-weight:800; font-size:0.7rem; text-transform:uppercase;">Status</span><br>
+            <span style="color:white; font-weight:700; font-size:0.9rem;">✅ Operacional</span>
+        </div>
     </div>
 """, unsafe_allow_html=True)
 
@@ -206,13 +232,10 @@ if all_data:
     df_dados, df_equipes = all_data['Dados'], all_data['Equipes']
 
     if st.session_state.menu == 'Principal':
-        st.subheader("🔥 Máquinas de Gols (Over)")
+        st.markdown('<div class="box-title">🔥 Máquinas de Gols (Top 15 Elite)</div>', unsafe_allow_html=True)
         
-        # Cálculo dos IVCs Soberanos
         ivc_results = df_equipes.apply(lambda x: calculate_ivc_soberano(x, df_dados), axis=1)
         df_equipes['IVC_Geral'], df_equipes['IVC_Casa'], df_equipes['IVC_Fora'], df_equipes['Média Geral'] = zip(*ivc_results)
-        
-        # Filtro de Volume Mínimo de 25 gols (TGM)
         df_maquinas = df_equipes[df_equipes['TGM'] >= 25].sort_values(by='IVC_Geral', ascending=False).head(15)
         
         cols = st.columns(2)
@@ -228,48 +251,52 @@ if all_data:
                 <div class="card-container">
                     <div style="display: flex; justify-content: space-between; align-items: flex-start;">
                         <div>
-                            <span style="font-size: 1.1rem; font-weight: 800; color: #1E3A8A;">{idx+1}. {row['Equipe']}</span><br>
-                            <img src="{get_flag_img(pais)}" style="width:18px; vertical-align:middle; border-radius:2px;"> 
-                            <span style="font-size: 0.75rem; color: #64748B;">{pais} - {liga}</span>
+                            <span style="font-size: 1.15rem; font-weight: 800; color: #1A365D;">{idx+1}. {row['Equipe']}</span><br>
+                            <img src="{get_flag_img(pais)}" style="width:18px; vertical-align:middle; border-radius:2px; margin-top:4px;"> 
+                            <span style="font-size: 0.75rem; color: #718096;">{pais} - {liga}</span>
                         </div>
                         <div style="text-align: right;">
-                            <div class="ivc-box">IVC: {row['IVC_Geral']:.2f}</div>
-                            <div class="ivc-box">CASA: {row['IVC_Casa']:.2f}</div>
-                            <div class="ivc-box">FORA: {row['IVC_Fora']:.2f}</div>
+                            <div class="ivc-rect">IVC: {row['IVC_Geral']:.2f}</div>
+                            <div class="ivc-rect">CASA: {row['IVC_Casa']:.2f}</div>
+                            <div class="ivc-rect">FORA: {row['IVC_Fora']:.2f}</div>
                         </div>
                     </div>
-                    <div class="rating-badge {rating_class}" style="margin-top:8px;">{emoji} {rating_text}</div>
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 10px; padding-top: 10px; border-top: 1px solid #F1F5F9;">
+                    <div class="rating-badge {rating_class}">{emoji} {rating_text}</div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 15px; padding-top: 12px; border-top: 1px solid #EDF2F7;">
                         <div>
-                            <p class="stat-label">Casa (Avg)</p>
+                            <p class="stat-label">Casa (Média)</p>
                             <p><span class="stat-value stat-value-green">{"<b>" if row['FAM']>=3 else ""}{row['FAM']:.2f}{"</b>" if row['FAM']>=3 else ""}</span> 
-                               <span style="color:#94A3B8; font-size:0.7rem;">M</span> | 
+                               <span style="color:#A0AEC0; font-size:0.75rem;">M</span> | 
                                <span class="stat-value stat-value-red">{row['VDM']:.2f}</span> 
-                               <span style="color:#94A3B8; font-size:0.7rem;">S</span></p>
-                            <p class="stat-label" style="font-size:0.6rem; margin-top:2px;">Força de Ataque Casa: {row['FAM']/1.35:.2f}</p>
+                               <span style="color:#A0AEC0; font-size:0.75rem;">S</span></p>
+                            <p class="stat-label" style="font-size:0.6rem;">Força de Ataque Casa: {row['FAM']/1.35:.2f}</p>
                         </div>
                         <div>
-                            <p class="stat-label">Fora (Avg)</p>
+                            <p class="stat-label">Fora (Média)</p>
                             <p><span class="stat-value stat-value-green">{"<b>" if row['FAV']>=3 else ""}{row['FAV']:.2f}{"</b>" if row['FAV']>=3 else ""}</span> 
-                               <span style="color:#94A3B8; font-size:0.7rem;">M</span> | 
+                               <span style="color:#A0AEC0; font-size:0.75rem;">M</span> | 
                                <span class="stat-value stat-value-red">{row['VDV']:.2f}</span> 
-                               <span style="color:#94A3B8; font-size:0.7rem;">S</span></p>
-                            <p class="stat-label" style="font-size:0.6rem; margin-top:2px;">Força de Ataque Fora: {row['FAV']/1.35:.2f}</p>
+                               <span style="color:#A0AEC0; font-size:0.75rem;">S</span></p>
+                            <p class="stat-label" style="font-size:0.6rem;">Força de Ataque Fora: {row['FAV']/1.35:.2f}</p>
                         </div>
                     </div>
                 </div>
                 """, unsafe_allow_html=True)
         
         st.markdown("""
-        <div style="background-color:#EFF6FF; padding:1.5rem; border-radius:12px; border:1px solid #BFDBFE; margin-top:1rem;">
-            <h4 style="color:#1E40AF; margin-top:0;">🛡️ Doutrina de Classificação Soberana (V7.1)</h4>
-            <p style="font-size:0.9rem; color:#1E3A8A; margin-bottom:5px;"><b>1. Força de Ataque:</b> Casa ≥ 1.40 | Fora ≥ 1.30 (em relação à média da liga).</p>
-            <p style="font-size:0.9rem; color:#1E3A8A; margin-bottom:5px;"><b>2. Frequência:</b> Mínimo de 4 em 6 jogos cumprindo a meta (2+ em casa, 1+ fora).</p>
-            <p style="font-size:0.9rem; color:#1E3A8A; margin-bottom:5px;"><b>3. Volume Mínimo:</b> A equipe deve ter marcado pelo menos 25 gols na janela analisada.</p>
-            <p style="font-size:0.9rem; color:#1E3A8A; margin-bottom:5px;"><b>4. IVC (Índice de Volume Cruzado):</b> Mede o cruzamento entre ataque e fragilidade defensiva.</p>
-            <ul style="font-size:0.85rem; color:#1E3A8A;">
-                <li>🥇 <b>Classe A (Ouro):</b> IVC ≥ 2.40 | 🥈 <b>Classe B (Prata):</b> IVC ≥ 1.83 | 🛑 <b>Classe C (Risco):</b> IVC < 1.83</li>
-            </ul>
+        <div style="background-color:#F0F7FF; padding:20px; border-radius:14px; border:1px solid #BEE3F8; margin-top:20px;">
+            <h4 style="color:#2C5282; margin-top:0;">🛡️ Doutrina de Classificação Soberana (V7.1)</h4>
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:20px;">
+                <div style="font-size:0.85rem; color:#2D3748;">
+                    <b>1. Força de Ataque:</b> Casa ≥ 1.40 | Fora ≥ 1.30 (vs média liga).<br>
+                    <b>2. Frequência:</b> Mínimo 4/6 jogos com meta (2+ casa, 1+ fora).<br>
+                    <b>3. Volume:</b> Mínimo de 25 gols marcados na janela.
+                </div>
+                <div style="font-size:0.85rem; color:#2D3748;">
+                    <b>4. IVC (Índice de Volume Cruzado):</b> Cruzamento Ataque x Defesa.<br>
+                    🥇 <b>Ouro:</b> IVC ≥ 2.40 | 🥈 <b>Prata:</b> IVC ≥ 1.83 | 🛑 <b>Risco:</b> IVC < 1.83
+                </div>
+            </div>
         </div>
         """, unsafe_allow_html=True)
 
@@ -289,9 +316,9 @@ if all_data:
             ge_real = (l_m + l_v) * np.sqrt((m.get('dispersao', 1) + v.get('dispersao', 1)) / 2)
             
             st.markdown(f"""
-            <div class="card-container" style="text-align:center; padding:2rem;">
+            <div class="card-container" style="text-align:center; padding:40px;">
                 <p class="stat-label" style="font-size:1rem;">GE Real (Fato Soberano)</p>
-                <p style="font-size:4rem; font-weight:800; color:#2563EB; margin:0;">{ge_real:.2f}</p>
+                <p style="font-size:4.5rem; font-weight:800; color:#3182CE; margin:0;">{ge_real:.2f}</p>
                 <p class="stat-label">Expectativa: {l_m:.2f} (M) | {l_v:.2f} (V)</p>
             </div>
             """, unsafe_allow_html=True)
