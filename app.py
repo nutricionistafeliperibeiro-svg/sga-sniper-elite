@@ -240,7 +240,7 @@ if all_data:
             m_cols[3].markdown(f'<div class="stat-box"><span class="stat-v" style="color:#718096;">{stats["gmc"]-stats["gsc"]}</span><span class="stat-l">Saldo</span></div>', unsafe_allow_html=True)
         else:
             st.markdown(f"""<div class="summary-bar"><div>Resultados de partidas · Janela Móvel de 12 jogos</div><div>{len(df_dados)} registros · {len(df_equipes)} clubes</div></div>""", unsafe_allow_html=True)
-            col_search, col_liga, col_btns = st.columns([1, 1, 1])
+            col_search, col_liga = st.columns([1, 1])
             with col_search:
                 clubes_list_raw = sorted(df_equipes['Equipe'].dropna().unique().tolist())
                 search_query = st.text_input("Buscar clube...", value="", placeholder="🔍 Buscar equipe...", label_visibility="collapsed")
@@ -253,9 +253,6 @@ if all_data:
             with col_liga:
                 liga_list = ["Todas as Ligas"] + sorted(df_dados['Pais_Liga'].unique().tolist())
                 sel_liga = st.selectbox("Filtrar Liga", liga_list, label_visibility="collapsed")
-            with col_btns:
-                new_file = st.file_uploader("EXCEL", type=["xlsx"], label_visibility="collapsed")
-                if new_file: st.session_state.uploaded_file = new_file; st.rerun()
             
             h_col1, h_col2, h_col3 = st.columns([1, 1, 1])
             with h_col1:
